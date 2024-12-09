@@ -263,12 +263,6 @@ func (initrd *dockerfile) Build(ctx context.Context) (string, error) {
 		initrd.opts.output = fi.Name()
 	}
 
-	outputDir, err := os.MkdirTemp("", "")
-	if err != nil {
-		return "", fmt.Errorf("could not make temporary directory: %w", err)
-	}
-	defer os.RemoveAll(outputDir)
-
 	tarOutput, err := os.CreateTemp("", "")
 	if err != nil {
 		return "", fmt.Errorf("could not make temporary file: %w", err)
@@ -566,6 +560,14 @@ func (initrd *dockerfile) Build(ctx context.Context) (string, error) {
 
 	if err := os.MkdirAll(filepath.Dir(initrd.opts.output), 0o755); err != nil {
 		return "", fmt.Errorf("could not create output directory: %w", err)
+	}
+
+	if initrd.opts.fsType == FsTypeErofs {
+		err := tarOutput.Close()
+		if err != nil && !strings.Contains(err.Error(), "file already closed") {
+			return "", fmt.Errorf("could not close tarball: %w", err)
+		}
+		return initrd.opts.output, convertToErofs(initrd.opts.output, tarOutput.Name(), true, !initrd.opts.keepOwners)
 	}
 
 	cpioFile, err := os.OpenFile(initrd.opts.output, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o644)

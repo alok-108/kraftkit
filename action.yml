@@ -115,6 +115,10 @@ inputs:
   rootfs:
     description: Set the root filesystem.  This can be an existing CPIO archive or a directory.
     required: false
+  rootfs-type:
+    description: Type of rootfs to build (cpio/erofs)
+    required: false
+    default: cpio
   strategy:
     description: Merge strategy to use when packaging.
     required: false
@@ -234,6 +238,7 @@ runs:
         -e "INPUT_EXECUTE=${{ inputs.execute }}" \
         -e "INPUT_FORCE_GIT=${{ inputs.force_git }}" \
         -e "INPUT_ROOTFS=${{ inputs.rootfs }}" \
+        -e "INPUT_ROOTFS_TYPE=${{ inputs.rootfs_type }}" \
         -e "INPUT_KRAFTFILE=${{ inputs.kraftfile }}" \
         -e "INPUT_LOGLEVEL=${{ inputs.loglevel }}" \
         -e "INPUT_MEMORY=${{ inputs.memory }}" \

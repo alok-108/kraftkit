@@ -60,22 +60,49 @@ func (initrd *file) Name() string {
 }
 
 // Build implements Initrd.
-func (initrd *file) Build(_ context.Context) (string, error) {
-	if initrd.opts.output == initrd.path {
-		return "", fmt.Errorf("CPIO archive path is the same as the source path, this is not allowed as it creates corrupted archives")
+func (initrd *file) Build(ctx context.Context) (string, error) {
+	switch initrd.opts.fsType {
+	case FsTypeErofs:
+		isCpio, err := isCpioFile(initrd.path)
+		if err != nil {
+			return "", fmt.Errorf("could not determine if file is a CPIO archive: %w", err)
+		}
+
+		isErofs, err := isErofsFile(initrd.path)
+		if err != nil {
+			return "", fmt.Errorf("could not determine if file is an EROFS archive: %w", err)
+		}
+
+		if isCpio {
+			return "", fmt.Errorf("CPIO-to-EROFS conversion currently not supported. Use 'bsdcpio' or 'cpio' to unpack it first to a directory")
+		}
+
+		if !isErofs {
+			return "", fmt.Errorf("file %s is not a valid EROFS archive", initrd.path)
+		}
+	case FsTypeCpio:
+		isCpio, err := isCpioFile(initrd.path)
+		if err != nil {
+			return "", fmt.Errorf("could not determine if file is a CPIO archive: %w", err)
+		}
+
+		isErofs, err := isErofsFile(initrd.path)
+		if err != nil {
+			return "", fmt.Errorf("could not determine if file is an EROFS archive: %w", err)
+		}
+
+		if isErofs {
+			return "", fmt.Errorf("EROFS-to-CPIO conversion currently not supported. Use 'fsck.erofs' to unpack it first to a directory")
+		}
+
+		if !isCpio {
+			return "", fmt.Errorf("file %s is not a valid CPIO archive", initrd.path)
+		}
+	default:
+		return "", fmt.Errorf("unknown filesystem type %s for file %s", initrd.opts.fsType, initrd.path)
 	}
 
-	input, err := os.ReadFile(initrd.path)
-	if err != nil {
-		return "", fmt.Errorf("reading input file: %w", err)
-	}
-
-	err = os.WriteFile(initrd.opts.output, input, 0o644)
-	if err != nil {
-		return "", fmt.Errorf("writing output file: %w", err)
-	}
-
-	return initrd.opts.output, nil
+	return initrd.path, nil
 }
 
 // Options implements Initrd.

@@ -18,6 +18,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"kraftkit.sh/cmdfactory"
+	"kraftkit.sh/initrd"
 	"kraftkit.sh/internal/cli/kraft/utils"
 	"kraftkit.sh/internal/fancymap"
 	"kraftkit.sh/iostreams"
@@ -32,29 +33,31 @@ import (
 var ErrContextNotBuildable = fmt.Errorf("could not determine what or how to build from the given context")
 
 type BuildOptions struct {
-	All          bool            `long:"all" usage:"Build all targets"`
-	Architecture string          `long:"arch" short:"m" usage:"Filter the creation of the build by architecture of known targets (x86_64/arm64/arm)"`
-	DotConfig    string          `long:"config" short:"c" usage:"Override the path to the KConfig .config file"`
-	Env          []string        `long:"env" short:"e" usage:"Set environment variables to be built in the unikernel" split:"false"`
-	ForcePull    bool            `long:"force-pull" usage:"Force pulling packages before building"`
-	Jobs         int             `long:"jobs" short:"j" usage:"Allow N jobs at once"`
-	KernelDbg    bool            `long:"dbg" usage:"Build the debuggable (symbolic) kernel image instead of the stripped image"`
-	Kraftfile    string          `long:"kraftfile" short:"K" usage:"Set an alternative path of the Kraftfile"`
-	NoCache      bool            `long:"no-cache" short:"F" usage:"Force a rebuild even if existing intermediate artifacts already exist"`
-	NoConfigure  bool            `long:"no-configure" usage:"Do not run Unikraft's configure step before building"`
-	NoFast       bool            `long:"no-fast" usage:"Do not use maximum parallelization when performing the build"`
-	NoFetch      bool            `long:"no-fetch" usage:"Do not run Unikraft's fetch step before building"`
-	NoRootfs     bool            `long:"no-rootfs" usage:"Do not build the root file system (initramfs)"`
-	NoUpdate     bool            `long:"no-update" usage:"Do not update package index before running the build"`
-	Output       string          `long:"output" short:"o" usage:"Set the output directory for the build artifacts"`
-	Platform     string          `long:"plat" short:"p" usage:"Filter the creation of the build by platform of known targets (fc/qemu/xen)"`
-	PrintStats   bool            `long:"print-stats" usage:"Print build statistics"`
-	Project      app.Application `noattribute:"true"`
-	Rootfs       string          `long:"rootfs" usage:"Specify a path to use as root file system (can be volume or initramfs)"`
-	SaveBuildLog string          `long:"build-log" usage:"Use the specified file to save the output from the build"`
-	Target       *target.Target  `noattribute:"true"`
-	TargetName   string          `long:"target" short:"t" usage:"Build a particular known target"`
-	Workdir      string          `noattribute:"true"`
+	All            bool            `long:"all" usage:"Build all targets"`
+	Architecture   string          `long:"arch" short:"m" usage:"Filter the creation of the build by architecture of known targets (x86_64/arm64/arm)"`
+	DotConfig      string          `long:"config" short:"c" usage:"Override the path to the KConfig .config file"`
+	Env            []string        `long:"env" short:"e" usage:"Set environment variables to be built in the unikernel" split:"false"`
+	ForcePull      bool            `long:"force-pull" usage:"Force pulling packages before building"`
+	Jobs           int             `long:"jobs" short:"j" usage:"Allow N jobs at once"`
+	KernelDbg      bool            `long:"dbg" usage:"Build the debuggable (symbolic) kernel image instead of the stripped image"`
+	Kraftfile      string          `long:"kraftfile" short:"K" usage:"Set an alternative path of the Kraftfile"`
+	NoCache        bool            `long:"no-cache" short:"F" usage:"Force a rebuild even if existing intermediate artifacts already exist"`
+	NoConfigure    bool            `long:"no-configure" usage:"Do not run Unikraft's configure step before building"`
+	NoFast         bool            `long:"no-fast" usage:"Do not use maximum parallelization when performing the build"`
+	NoFetch        bool            `long:"no-fetch" usage:"Do not run Unikraft's fetch step before building"`
+	NoRootfs       bool            `long:"no-rootfs" usage:"Do not build the root file system (initramfs)"`
+	NoUpdate       bool            `long:"no-update" usage:"Do not update package index before running the build"`
+	Output         string          `long:"output" short:"o" usage:"Set the output directory for the build artifacts"`
+	Platform       string          `long:"plat" short:"p" usage:"Filter the creation of the build by platform of known targets (fc/qemu/xen)"`
+	PrintStats     bool            `long:"print-stats" usage:"Print build statistics"`
+	Project        app.Application `noattribute:"true"`
+	Rootfs         string          `long:"rootfs" usage:"Specify a path to use as root file system (can be volume or initramfs)"`
+	RootfsType     initrd.FsType   `noattribute:"true"`
+	KeepFileOwners bool            `noattribute:"true"`
+	SaveBuildLog   string          `long:"build-log" usage:"Use the specified file to save the output from the build"`
+	Target         *target.Target  `noattribute:"true"`
+	TargetName     string          `long:"target" short:"t" usage:"Build a particular known target"`
+	Workdir        string          `noattribute:"true"`
 
 	statistics map[string]string
 }
@@ -108,7 +111,15 @@ func Build(ctx context.Context, opts *BuildOptions, args ...string) error {
 		return fmt.Errorf("could not complete build: %w", err)
 	}
 
-	if _, _, _, err = utils.BuildRootfs(ctx, opts.Workdir, opts.Rootfs, false, (*opts.Target).Architecture().String()); err != nil {
+	if _, _, _, err = utils.BuildRootfs(
+		ctx,
+		opts.Workdir,
+		opts.Rootfs,
+		false,
+		opts.KeepFileOwners,
+		(*opts.Target).Architecture().String(),
+		opts.RootfsType,
+	); err != nil {
 		return err
 	}
 
@@ -169,6 +180,15 @@ func NewCmd() *cobra.Command {
 	if err != nil {
 		panic(err)
 	}
+
+	cmd.Flags().Var(
+		cmdfactory.NewEnumFlag[initrd.FsType](
+			initrd.FsTypes(),
+			initrd.FsTypeCpio,
+		),
+		"rootfs-type",
+		"Set the type of the format of the rootfs (cpio/erofs)",
+	)
 
 	return cmd
 }

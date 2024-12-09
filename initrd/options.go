@@ -4,12 +4,16 @@
 // You may not use this file except in compliance with the License.
 package initrd
 
+import "fmt"
+
 type InitrdOptions struct {
-	compress bool
-	output   string
-	cacheDir string
-	arch     string
-	workdir  string
+	arch       string
+	cacheDir   string
+	compress   bool
+	keepOwners bool
+	output     string
+	fsType     FsType
+	workdir    string
 }
 
 // Whether the resulting CPIO archive file should be compressed.
@@ -47,11 +51,13 @@ func WithCompression(compress bool) InitrdOption {
 	}
 }
 
-// WithOutput sets the location of the output location of the resulting CPIO
-// archive file.
-func WithOutput(output string) InitrdOption {
+// WithArchitecture sets the architecture of the file contents of binaries in
+// the initramfs.  Files may not always be architecture specific, this option
+// simply indicates the target architecture if any binaries are compiled by the
+// implementing initrd builder.
+func WithArchitecture(arch string) InitrdOption {
 	return func(opts *InitrdOptions) error {
-		opts.output = output
+		opts.arch = arch
 		return nil
 	}
 }
@@ -66,13 +72,28 @@ func WithCacheDir(dir string) InitrdOption {
 	}
 }
 
-// WithArchitecture sets the architecture of the file contents of binaries in
-// the initramfs.  Files may not always be architecture specific, this option
-// simply indicates the target architecture if any binaries are compiled by the
-// implementing initrd builder.
-func WithArchitecture(arch string) InitrdOption {
+// WithKeepOwners sets whether the resulting archive file should keep the
+// owners of the files in the initramfs.
+func WithKeepOwners(keep bool) InitrdOption {
 	return func(opts *InitrdOptions) error {
-		opts.arch = arch
+		opts.keepOwners = keep
+		return nil
+	}
+}
+
+// WithOutput sets the location of the output location of the resulting CPIO
+// archive file.
+func WithOutput(output string) InitrdOption {
+	return func(opts *InitrdOptions) error {
+		opts.output = output
+		return nil
+	}
+}
+
+// WithType sets the filesystem type of the resulting CPIO archive file.
+func WithType(fsType FsType) InitrdOption {
+	return func(opts *InitrdOptions) error {
+		opts.fsType = fsType
 		return nil
 	}
 }
@@ -85,4 +106,38 @@ func WithWorkdir(dir string) InitrdOption {
 		opts.workdir = dir
 		return nil
 	}
+}
+
+type FsType string
+
+const (
+	FsTypeCpio    = FsType("cpio")
+	FsTypeErofs   = FsType("erofs")
+	FsTypeUnknown = FsType("unknown")
+)
+
+var _ fmt.Stringer = (*FsType)(nil)
+
+// String implements fmt.Stringer
+func (fsType FsType) String() string {
+	return string(fsType)
+}
+
+// FsTypes returns the list of possible fsTypes.
+func FsTypes() []FsType {
+	return []FsType{
+		FsTypeCpio,
+		FsTypeErofs,
+	}
+}
+
+// FsTypeNames returns the string representation of all possible
+// fsType implementations.
+func FsTypeNames() []string {
+	types := []string{}
+	for _, name := range FsTypes() {
+		types = append(types, name.String())
+	}
+
+	return types
 }

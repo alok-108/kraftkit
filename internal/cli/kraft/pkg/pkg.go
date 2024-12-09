@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"kraftkit.sh/config"
+	"kraftkit.sh/initrd"
 	"kraftkit.sh/log"
 	"kraftkit.sh/machine/platform"
 	"kraftkit.sh/pack"
@@ -37,30 +38,32 @@ import (
 )
 
 type PkgOptions struct {
-	Architecture string                    `local:"true" long:"arch" short:"m" usage:"Filter the creation of the package by architecture of known targets (x86_64/arm64/arm)"`
-	Args         []string                  `local:"true" long:"args" short:"a" usage:"Pass arguments that will be part of the running kernel's command line"`
-	Compress     bool                      `local:"true" long:"compress" short:"c" usage:"Compress the initrd package (experimental)"`
-	Dbg          bool                      `local:"true" long:"dbg" usage:"Package the debuggable (symbolic) kernel image instead of the stripped image"`
-	Env          []string                  `local:"true" long:"env" short:"e" usage:"Set environment variables to be packed into the package" split:"false"`
-	Force        bool                      `local:"true" long:"force-format" usage:"Force the use of a packaging handler format"`
-	Format       string                    `local:"true" long:"as" short:"M" usage:"Force the packaging despite possible conflicts" default:"oci"`
-	Kernel       string                    `local:"true" long:"kernel" short:"k" usage:"Override the path to the unikernel image"`
-	Kraftfile    string                    `long:"kraftfile" short:"K" usage:"Set an alternative path of the Kraftfile"`
-	Labels       []string                  `local:"true" long:"label" short:"l" usage:"Set labels to be packed into the package (k=v)"`
-	Name         string                    `local:"true" long:"name" short:"n" usage:"Specify the name of the package"`
-	NoKConfig    bool                      `local:"true" long:"no-kconfig" usage:"Do not include target .config as metadata"`
-	NoKernel     bool                      `local:"true" long:"no-kernel" usage:"Allow packaging without a kernel image"`
-	NoPull       bool                      `local:"true" long:"no-pull" usage:"Do not pull package dependencies before packaging"`
-	Output       string                    `local:"true" long:"output" short:"o" usage:"Save the package at the following output"`
-	Platform     string                    `local:"true" long:"plat" short:"p" usage:"Filter the creation of the package by platform of known targets (fc/qemu/xen/kraftcloud)"`
-	Project      app.Application           `noattribute:"true"`
-	Push         bool                      `local:"true" long:"push" short:"P" usage:"Push the package on if successfully packaged"`
-	Roms         []string                  `local:"true" long:"rom" short:"R" usage:"Specify a path to an auxiliary ROM to include in the package"`
-	Rootfs       string                    `local:"true" long:"rootfs" usage:"Specify a path to use as root file system (can be volume or initramfs)"`
-	Runtime      string                    `local:"true" long:"runtime" short:"r" usage:"Set the runtime to use for the package"`
-	Strategy     packmanager.MergeStrategy `noattribute:"true"`
-	Target       string                    `local:"true" long:"target" short:"t" usage:"Package a particular known target"`
-	Workdir      string                    `local:"true" long:"workdir" short:"w" usage:"Set an alternative working directory (default is cwd)"`
+	Architecture   string                    `local:"true" long:"arch" short:"m" usage:"Filter the creation of the package by architecture of known targets (x86_64/arm64/arm)"`
+	Args           []string                  `local:"true" long:"args" short:"a" usage:"Pass arguments that will be part of the running kernel's command line"`
+	Compress       bool                      `local:"true" long:"compress" short:"c" usage:"Compress the initrd package (experimental)"`
+	Dbg            bool                      `local:"true" long:"dbg" usage:"Package the debuggable (symbolic) kernel image instead of the stripped image"`
+	Env            []string                  `local:"true" long:"env" short:"e" usage:"Set environment variables to be packed into the package" split:"false"`
+	Force          bool                      `local:"true" long:"force-format" usage:"Force the use of a packaging handler format"`
+	Format         string                    `local:"true" long:"as" short:"M" usage:"Force the packaging despite possible conflicts" default:"oci"`
+	KeepFileOwners bool                      `local:"true" long:"keep-file-owners" usage:"Keep file owners (user:group) in the rootfs (false sets 'root:root')"`
+	Kernel         string                    `local:"true" long:"kernel" short:"k" usage:"Override the path to the unikernel image"`
+	Kraftfile      string                    `long:"kraftfile" short:"K" usage:"Set an alternative path of the Kraftfile"`
+	Labels         []string                  `local:"true" long:"label" short:"l" usage:"Set labels to be packed into the package (k=v)"`
+	Name           string                    `local:"true" long:"name" short:"n" usage:"Specify the name of the package"`
+	NoKConfig      bool                      `local:"true" long:"no-kconfig" usage:"Do not include target .config as metadata"`
+	NoKernel       bool                      `local:"true" long:"no-kernel" usage:"Allow packaging without a kernel image"`
+	NoPull         bool                      `local:"true" long:"no-pull" usage:"Do not pull package dependencies before packaging"`
+	Output         string                    `local:"true" long:"output" short:"o" usage:"Save the package at the following output"`
+	Platform       string                    `local:"true" long:"plat" short:"p" usage:"Filter the creation of the package by platform of known targets (fc/qemu/xen/kraftcloud)"`
+	Project        app.Application           `noattribute:"true"`
+	Push           bool                      `local:"true" long:"push" short:"P" usage:"Push the package on if successfully packaged"`
+	Rootfs         string                    `local:"true" long:"rootfs" usage:"Specify a path to use as root file system (can be volume or initramfs)"`
+	RootfsType     initrd.FsType             `noattribute:"true"`
+	Roms           []string                  `local:"true" long:"rom" short:"R" usage:"Specify a path to an auxiliary ROM to include in the package"`
+	Runtime        string                    `local:"true" long:"runtime" short:"r" usage:"Set the runtime to use for the package"`
+	Strategy       packmanager.MergeStrategy `noattribute:"true"`
+	Target         string                    `local:"true" long:"target" short:"t" usage:"Package a particular known target"`
+	Workdir        string                    `local:"true" long:"workdir" short:"w" usage:"Set an alternative working directory (default is cwd)"`
 
 	packopts []packmanager.PackOption
 	pm       packmanager.PackageManager
@@ -297,6 +300,15 @@ func NewCmd() *cobra.Command {
 		"When a package of the same name exists, use this strategy when applying targets.",
 	)
 
+	cmd.Flags().Var(
+		cmdfactory.NewEnumFlag[initrd.FsType](
+			initrd.FsTypes(),
+			initrd.FsTypeCpio,
+		),
+		"rootfs-type",
+		"Set the type of the format of the rootfs (cpio/erofs)",
+	)
+
 	return cmd
 }
 
@@ -309,6 +321,11 @@ func (opts *PkgOptions) Pre(cmd *cobra.Command, args []string) error {
 	cmd.SetContext(ctx)
 
 	opts.Strategy = packmanager.MergeStrategy(cmd.Flag("strategy").Value.String())
+	if cmd.Flag("rootfs-type").Changed && cmd.Flag("rootfs-type").Value.String() != "" {
+		opts.RootfsType = initrd.FsType(cmd.Flag("rootfs-type").Value.String())
+	} else {
+		opts.RootfsType = initrd.FsTypeCpio
+	}
 
 	return nil
 }

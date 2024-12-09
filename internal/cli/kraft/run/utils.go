@@ -374,6 +374,7 @@ func (opts *RunOptions) prepareRootfs(ctx context.Context, machine *machineapi.M
 		)),
 		initrd.WithArchitecture(machine.Spec.Architecture),
 		initrd.WithWorkdir(opts.workdir),
+		initrd.WithType(opts.RootfsType),
 	)
 	if err != nil {
 		return fmt.Errorf("could not prepare initramfs: %w", err)

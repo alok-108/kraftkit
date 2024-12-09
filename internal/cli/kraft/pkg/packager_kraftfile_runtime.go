@@ -382,8 +382,19 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 		log.G(ctx).Warn("no kernel detected: packaging without - this may produce unexpected results")
 	}
 
+	// Create a temporary directory we can use to store the artifacts from
+	// pulling and extracting the identified package.
+	tempDir, err := os.MkdirTemp("", "kraft-pkg-")
+	if err != nil {
+		return nil, fmt.Errorf("could not create temporary directory: %w", err)
+	}
+
+	defer func() {
+		os.RemoveAll(tempDir)
+	}()
+
 	var rootfsArgs []string
-	if p.rootfs, rootfsArgs, p.env, err = utils.BuildRootfs(ctx, opts.Workdir, opts.Rootfs, opts.Compress, p.architecture.String()); err != nil {
+	if p.rootfs, rootfsArgs, p.env, err = utils.BuildRootfs(ctx, opts.Workdir, opts.Rootfs, opts.Compress, opts.KeepFileOwners, p.target.Architecture().String(), opts.RootfsType); err != nil {
 		return nil, fmt.Errorf("could not build rootfs: %w", err)
 	}
 
