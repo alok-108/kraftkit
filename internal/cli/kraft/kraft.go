@@ -7,12 +7,18 @@ package kraft
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"runtime/pprof"
+	"strings"
+	"time"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/getsentry/sentry-go"
 	"github.com/rancher/wrangler/pkg/signals"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -136,6 +142,9 @@ func (k *KraftOptions) Run(_ context.Context, args []string) error {
 	return pflag.ErrHelp
 }
 
+// The Sentry DSN to use for anonymous telemetry.
+var sentryDsn = ""
+
 func Main(args []string) int {
 	cmd := NewCmd()
 	ctx := signals.SetupSignalContext()
@@ -176,9 +185,7 @@ func Main(args []string) int {
 	}
 
 	// Set up the config manager in the context if it is available
-	if copts.ConfigManager != nil {
-		ctx = config.WithConfigManager(ctx, copts.ConfigManager)
-	}
+	ctx = config.WithConfigManager(ctx, copts.ConfigManager)
 
 	// Hydrate KraftCloud configuration
 	if newCtx, err := config.HydrateKraftCloudAuthInContext(ctx); err == nil {
@@ -186,9 +193,60 @@ func Main(args []string) int {
 	}
 
 	// Set up the logger in the context if it is available
-	if copts.Logger != nil {
-		ctx = log.WithLogger(ctx, copts.Logger)
+	ctx = log.WithLogger(ctx, copts.Logger)
+
+	// Add the kraftkit version to the debug logs
+	log.G(ctx).
+		WithField("version", kitversion.Version()).
+		Debugf("kraftkit")
+
+	collectTelemetry := sentryDsn != "" && config.G[config.KraftKit](ctx).CollectAnonymousTelemetry
+
+	if collectTelemetry {
+		sentryDsn, err := base64.StdEncoding.DecodeString(sentryDsn)
+		if err != nil {
+			collectTelemetry = false
+		} else {
+			if err := sentry.Init(sentry.ClientOptions{
+				Dsn:              string(sentryDsn),
+				Release:          kitversion.Version(),
+				TracesSampleRate: 1.0,
+			}); err != nil {
+				log.G(ctx).Debugf("could not initialize sentry: %v", err)
+			} else {
+				log.G(ctx).Debug("collecting anonymous telemetry - to disable export KRAFTKIT_COLLECT_ANONYMOUS_TELEMETRY=false")
+			}
+		}
 	}
+
+	defer func() {
+		if err := recover(); err != nil {
+			if collectTelemetry {
+				sentry.CurrentHub().RecoverWithContext(ctx, err)
+				sentry.Flush(time.Second * 5)
+			}
+
+			// Use copts.Logger as access to log.G(ctx) may not be available in the
+			// panic state.
+			copts.Logger.Logf(logrus.FatalLevel, "a fatal error occurred: %s", err)
+
+			recoverLevel := logrus.DebugLevel
+			if !collectTelemetry {
+				recoverLevel = logrus.ErrorLevel
+			}
+
+			// Only log the stack trace if the user has opted-out of telemetry such
+			// that they can see the stack trace and report the issue.  Otherwise,
+			// silently log these to the debug level and suggest the user to open an
+			// issue.
+			for _, line := range strings.Split(string(debug.Stack()), "\n") {
+				copts.Logger.Log(recoverLevel, line)
+			}
+			if !collectTelemetry {
+				copts.Logger.Log(logrus.FatalLevel, "please consider opening an issue at: https://github.com/unikraft/kraftkit/issues/new?template=bug_report.yml")
+			}
+		}
+	}()
 
 	// Set up the iostreams in the context if it is available
 	if copts.IOStreams != nil {
@@ -208,9 +266,6 @@ func Main(args []string) int {
 		log.G(ctx).Warn("\texport KRAFTKIT_NO_WARN_SUDO=1")
 		log.G(ctx).Warn("")
 	}
-
-	// Add the kraftkit version to the debug logs
-	log.G(ctx).Debugf("kraftkit %s", kitversion.Version())
 
 	if !config.G[config.KraftKit](ctx).NoCheckUpdates {
 		if err := kitupdate.Check(ctx); err != nil {

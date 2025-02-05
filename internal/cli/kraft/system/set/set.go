@@ -29,6 +29,9 @@ func NewCmd() *cobra.Command {
 		Example: heredoc.Doc(`
 			# Change the default log level and log type
 			$ kraft system set log.level=debug log.type=basic
+
+			# Enable anonymous telemetry
+			$ kraft system set collect_anonymous_telemetry=true
 		`),
 		Annotations: map[string]string{
 			cmdfactory.AnnotationHelpGroup: "misc",
