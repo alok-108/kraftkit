@@ -217,29 +217,29 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	var levelText string
 	switch entry.Level {
 	case logrus.InfoLevel:
-		levelText = "i"
+		levelText = " i "
 		levelColor = colorScheme.InfoLevel
 	case logrus.WarnLevel:
-		levelText = "W"
+		levelText = " W "
 		levelColor = colorScheme.WarnLevel
 	case logrus.ErrorLevel:
-		levelText = "E"
+		levelText = " E "
 		levelColor = colorScheme.ErrorLevel
 	case logrus.FatalLevel:
-		levelText = "!"
+		levelText = "<!>"
 		levelColor = colorScheme.FatalLevel
 	case logrus.PanicLevel:
-		levelText = "X"
+		levelText = " X "
 		levelColor = colorScheme.PanicLevel
 	case logrus.TraceLevel:
-		levelText = "T"
+		levelText = " T "
 		levelColor = colorScheme.TraceLevel
 	default:
-		levelText = "D"
+		levelText = " D "
 		levelColor = colorScheme.DebugLevel
 	}
 
-	level := levelColor(fmt.Sprintf(" %1s ", levelText))
+	level := levelColor(levelText)
 	prefix := ""
 	message := entry.Message
 
