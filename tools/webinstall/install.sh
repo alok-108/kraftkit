@@ -1698,6 +1698,24 @@ check_autoinstall() {
     _RETVAL="$_cai_auto_install"
 }
 
+# collect_telemetry queries the user as to whether to enable anonymous telemetry
+# and then updates KraftKit's configuration accordingly.
+# Returns:
+# _RETVAL: whether to enable telemetry: y or empty
+collect_telemetry() {
+    _et_telemetry=""
+
+    if prompt_yes_no "Help us make KraftKit better and opt-in to collecting anonymous telemetry? [y/N]: " "n"; then
+        _et_telemetry="y"
+        kraft system set collect_anonymous_telemetry=true
+    else
+        _et_telemetry="n"
+        kraft system set collect_anonymous_telemetry=false
+    fi
+
+    _RETVAL="$_et_telemetry"
+}
+
 # main is the entrypoint of the script.
 # The steps are:
 # 1. Check if we have all the commands we need
@@ -1734,18 +1752,19 @@ main() {
     # Install kraftkit for the given architecture and its dependencies
     install_kraftkit "$_main_arch" "$_main_auto_install"
 
-    # Check if kraft is installed and working
-    kraft -h
-    _main_kraft_ret="$?"
-
     # Install kraftkit completions
     if [ "$HAS_TTY" = "y" ]; then
         install_completions "$_main_arch"
+        collect_telemetry
     fi
 
-    say_ok 'Happy Krafting!'
+    say ''
+    say_ok 'Happy krafting!'
+    say ''
+    say 'Type kraft -h for help'
+    say ''
 
-    return $_main_kraft_ret
+    return 0
 }
 
 
