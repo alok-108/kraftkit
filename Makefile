@@ -75,7 +75,7 @@ YTT_VERSION        ?= v0.51.0
 YTT                ?= $(GO) run carvel.dev/ytt/cmd/ytt@$(YTT_VERSION)
 GORELEASER_VERSION ?= v2.7.0
 GORELEASER         ?= $(GO) run github.com/goreleaser/goreleaser/v2@$(GORELEASER_VERSION)
-GINKGO_VERSION     ?= v2.22.0
+GINKGO_VERSION     ?= v2.22.2
 GINKGO             ?= $(GO) run github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 # Misc
@@ -255,7 +255,7 @@ test: test-unit test-framework test-e2e test-cloud-e2e ## Run all tests.
 test-unit: GOTEST_EXCLUDE := third_party/ test/ hack/ buildenvs/ dist/ docs/ tools/
 test-unit: GOTEST_PKGS := $(foreach pkg,$(filter-out $(GOTEST_EXCLUDE),$(wildcard */)),$(pkg)...)
 test-unit: ## Run unit tests.
-	$(GINKGO)  -v -p -randomize-all -tags "containers_image_storage_stub,containers_image_openpgp" $(GOTEST_PKGS)
+	$(GINKGO) -v -p -randomize-all -tags "containers_image_storage_stub,containers_image_openpgp" $(GOTEST_PKGS)
 
 .PHONY: test-e2e
 test-e2e: kraft ## Run CLI end-to-end tests.
