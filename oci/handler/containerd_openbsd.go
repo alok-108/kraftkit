@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/content"
 	"github.com/opencontainers/go-digest"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
@@ -14,7 +13,7 @@ import (
 
 type ContainerdHandler struct{}
 
-func NewContainerdHandler(ctx context.Context, address, namespace string, auths map[string]config.AuthConfig, opts ...containerd.ClientOpt) (context.Context, *ContainerdHandler, error) {
+func NewContainerdHandler(ctx context.Context, address, namespace string, auths map[string]config.AuthConfig, opts ...any) (context.Context, *ContainerdHandler, error) {
 	return ctx, nil, fmt.Errorf("containerd is not supported on openbsd")
 }
 
