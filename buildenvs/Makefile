@@ -45,7 +45,7 @@ xen:
 
 .PHONY: qemu
 qemu: QEMU_VERSION ?= 8.2.4
-qemu: MAKE_NPROC   ?= $(shell nproc)
+qemu: MAKE_NPROC   ?= 2
 qemu: ENVIRONMENT  ?= qemu
 qemu: IMAGE        ?= $(REGISTRY)/qemu:$(QEMU_VERSION)
 ifeq ($(WITH_CACHE),y)
