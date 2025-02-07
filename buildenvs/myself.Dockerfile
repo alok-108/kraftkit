@@ -39,16 +39,16 @@ RUN set -xe; \
 COPY --from=xen /usr/local/lib/libxen*.a /usr/local/lib/libxen*.so* /usr/local/lib
 COPY --from=xen /usr/local/include/* /usr/local/include/
 COPY --from=xen /usr/lib/x86_64-linux-gnu/liblzma.a \
-				/usr/lib/x86_64-linux-gnu/libbz2.a \
-				/usr/lib/x86_64-linux-gnu/libzstd.a \
-				/usr/lib/x86_64-linux-gnu/liblzo2.a \
-				/usr/lib/x86_64-linux-gnu/libyajl.a \
-				/usr/lib/x86_64-linux-gnu/libz.a \
-				/usr/lib/x86_64-linux-gnu/libnl-route-3.a \
-				/usr/lib/x86_64-linux-gnu/libnl-3.a \
-				/usr/lib/x86_64-linux-gnu/libuuid.a \
-				/usr/lib/x86_64-linux-gnu/libutil.a \
-				/usr/lib/x86_64-linux-gnu
+                /usr/lib/x86_64-linux-gnu/libbz2.a \
+                /usr/lib/x86_64-linux-gnu/libzstd.a \
+                /usr/lib/x86_64-linux-gnu/liblzo2.a \
+                /usr/lib/x86_64-linux-gnu/libyajl.a \
+                /usr/lib/x86_64-linux-gnu/libz.a \
+                /usr/lib/x86_64-linux-gnu/libnl-route-3.a \
+                /usr/lib/x86_64-linux-gnu/libnl-3.a \
+                /usr/lib/x86_64-linux-gnu/libuuid.a \
+                /usr/lib/x86_64-linux-gnu/libutil.a \
+                /usr/lib/x86_64-linux-gnu
 
 WORKDIR /go/src/kraftkit.sh
 
