@@ -42,6 +42,7 @@ jobs:
             contains(steps.changed-files.outputs.all_changed_files, 'buildenvs/base-golang.Dockerfile') ||
             contains(steps.changed-files.outputs.all_changed_files, 'buildenvs/myself.Dockerfile') ||
             contains(steps.changed-files.outputs.all_changed_files, 'buildenvs/github-action.Dockerfile') ||
+            contains(steps.changed-files.outputs.all_changed_files, 'buildenvs/xen.Dockerfile') ||
             contains(steps.changed-files.outputs.all_changed_files, '.github/workflows/buildenvs.yaml') ||
             contains(steps.changed-files.outputs.all_changed_files, 'tools/github-action/') ||
             contains(steps.changed-files.outputs.all_changed_files, 'action.yml')
