@@ -148,7 +148,7 @@ builds:
         -lxendevicemodel -lxengnttab -lxentoollog -lz -lnl-route-3 -lnl-3 -luuid -lutil"
       #@ else:
       - -linkmode external -extldflags "-static"
-      #@
+      #@ end
     tags:
       - containers_image_storage_stub
       - containers_image_openpgp
