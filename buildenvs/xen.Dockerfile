@@ -52,7 +52,7 @@ RUN set -xe; \
     ; \
     pip3 install python-config --break-system-packages; \
     git clone -b stable-${XEN_VERSION} https://xenbits.xen.org/git-http/xen.git /xen; \
-    sed '/xs.opic: CFLAGS += -DUSE_PTHREAD/a xs.o: CFLAGS += -DUSE_PTHREAD' /xen/tools/libs/store/Makefile; \
+    sed -i '/xs.opic: CFLAGS += -DUSE_PTHREAD/a xs.o: CFLAGS += -DUSE_PTHREAD' /xen/tools/libs/store/Makefile; \
     cd /xen; \
     ./configure \
         --enable-virtfs \
