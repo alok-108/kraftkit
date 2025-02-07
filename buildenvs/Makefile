@@ -14,6 +14,7 @@ IMAGE_TAG    ?= latest
 BUILDENVS    ?= gcc \
                 qemu \
                 myself \
+                xen \
                 base
 
 DOCKER       ?= docker
