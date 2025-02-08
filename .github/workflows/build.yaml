@@ -10,6 +10,7 @@ on:
       - '.github/workflows/build.yaml'
       - '!buildenvs/**'
       - '!tools/**'
+      - '!README.md'
 
 # Automatically cancel in-progress actions on the same branch
 concurrency:
