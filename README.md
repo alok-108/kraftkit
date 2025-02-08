@@ -21,10 +21,14 @@ There are many benefits in running your application as a unikernel: for more inf
 
 ## Features
 
-- 🔥 Native [Firecracker MicroVM](https://firecracker-microvm.github.io/) support;
-- 📚 Pre-built unikernel app catalog;
-- 🤹‍♀️ Daemonless unikernel VM instance manager;
-- 📦 OCI packaging and distribution support;
+- 🚧 Build, run and package unikernel VMs;
+- 🐳 Use existing Dockerfiles and Composefiles;
+- 📚 Fetch and run pre-built unikernel from the [app catalog](https://github.com/unikraft/catalog);
+- 🔥 Run unikernel VMs using QEMU, Xen and [Firecracker MicroVM](https://firecracker-microvm.github.io/);
+- 🤹‍♀️ Daemonless unikernel local VM instance manager;
+- ⛅️ Deploy unikernel VMs to the [cloud](https://unikraft.cloud);
+- 🍎 Native Linux, macOS and Windows support;
+- 📦 Package and push unikernels in OCI format for easy distribution;
 - 🚜 ELF binary / POSIX-compatibility support;
 - 🧰 Go SDK for building unikernels programmatically; and
 - 🚀 _much more!_
@@ -33,7 +37,7 @@ There are many benefits in running your application as a unikernel: for more inf
 ## Installation
 
 You can quickly and easily install KraftKit using the interactive installer.
-Simply run the following command to get started:
+Run the following command to get started:
 
 ```shell
 curl --proto '=https' --tlsv1.2 -sSf https://get.kraftkit.sh | sh
@@ -50,17 +54,19 @@ See also the [hacking documentation on how to build KraftKit from source](https:
 
 KraftKit ships a container build environment which you can use instead of installing any dependencies directly on your host.
 It includes the `kraft` binary as well as all the additional tools and libraries for building Unikraft unikernels.
-Simply attach a working directory on your host as a mount path volume mapped to `/workspace`, e.g.:
+Attach a working directory on your host as a mount path volume mapped to `/workspace`, e.g.:
 
 ```shell
 docker run -it --rm -v $(pwd):/workspace --entrypoint bash kraftkit.sh/base:latest
 ```
 
 The above command will drop you into a container shell.
-Simply type `exit` or Ctrl+D to quit.
+Type `exit` or Ctrl+D to quit.
 
 
 ## Quickstart
+
+### Test your installation
 
 Running unikernels with `kraft` is designed to be simple and familiar.
 To test your installation of `kraft`, you can run the following:
@@ -69,7 +75,30 @@ To test your installation of `kraft`, you can run the following:
 kraft run unikraft.org/helloworld:latest
 ```
 
-Building unikernels is also designed to be simple.
+### Build your first unikernel
+
+Building unikernels is also designed to be simple.  Build your first unikernel
+by placing a `Kraftfile` into your repo and pointing it to your existing
+`Dockerfile`:
+
+```yaml
+spec: v0.6
+
+runtime: base:latest
+
+rootfs: ./Dockerfile
+
+cmd: ["/path/to/my-server-app"]
+```
+
+Once done, invoke:
+
+```
+kraft run .
+```
+
+### Examples and pre-built images
+
 You can find some common project examples below:
 
 | | Example |
@@ -87,7 +116,7 @@ Find [more examples and applications in our community catalog](https://github.co
 
 ## Use in GitHub Actions
 
-KraftKit can be used to automatically build your application into a unikernel in a GitHub Actions workflow, simply `use` `unikraft/kraftkit@staging`.
+KraftKit can be used to automatically build your application into a unikernel in a GitHub Actions workflow, "`use`" `unikraft/kraftkit@staging`.
 
 In the following example, a repository that has been initialized with a top-level `Kraftfile` that contains a target for qemu/x86_64 will be built every time a PR is opened, synchronized or re-opened:
 
