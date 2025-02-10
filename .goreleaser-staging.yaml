@@ -163,7 +163,7 @@ archives:
 #@ for os, archs in binaries["kraft"].items():
 #@ for arch in archs:
   - id: #@ "archive-kraft-{}-{}".format(os, arch)
-    format: tar.gz
+    formats: tar.gz
     name_template: kraft_{{ .Version }}_{{ .Os }}_{{ .Arch }}
     builds:
       - #@ "kraft-{}-{}".format(os, arch)
@@ -182,7 +182,7 @@ archives:
 #@ for os, archs in binaries["runu"].items():
 #@ for arch in archs:
   - id: #@ "archive-runu-{}-{}".format(os, arch)
-    format: tar.gz
+    formats: tar.gz
     name_template: runu_{{ .Version }}_{{ .Os }}_{{ .Arch }}
     builds:
       - #@ "runu-{}-{}".format(os, arch)
