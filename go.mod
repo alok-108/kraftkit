@@ -13,7 +13,7 @@ require (
 	github.com/anchore/stereoscope v0.0.12
 	github.com/briandowns/spinner v1.23.2
 	github.com/charmbracelet/bubbles v0.20.0
-	github.com/charmbracelet/bubbletea v1.2.4
+	github.com/charmbracelet/bubbletea v1.3.0
 	github.com/charmbracelet/lipgloss v1.0.0
 	github.com/cli/cli/v2 v2.65.0
 	github.com/cli/go-gh v1.2.1
@@ -114,7 +114,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chainguard-dev/git-urls v1.0.2 // indirect
 	github.com/charmbracelet/harmonica v0.2.0 // indirect
-	github.com/charmbracelet/x/ansi v0.4.5 // indirect
+	github.com/charmbracelet/x/ansi v0.8.0 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/cli/go-gh/v2 v2.11.2 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
