@@ -16,6 +16,7 @@ RUN set -xe; \
     apt-get install -y --no-install-recommends \
       build-essential \
       cmake \
+      clang \
       libssh2-1-dev \
       libssl-dev \
       make \

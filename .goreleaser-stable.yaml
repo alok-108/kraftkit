@@ -221,7 +221,7 @@ archives:
 #@ for os, archs in binaries["kraft"].items():
 #@ for arch in archs:
   - id: #@ "archive-kraft-{}-{}".format(os, arch)
-    format: tar.gz
+    formats: tar.gz
     name_template: kraft_{{ .Version }}_{{ .Os }}_{{ .Arch }}
     builds:
       - #@ "kraft-{}-{}".format(os, arch)
