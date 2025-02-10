@@ -8,6 +8,7 @@ on:
       - '**'
       - '!.github/**'
       - '.github/workflows/tests.yaml'
+      - '!README.md'
 
 jobs:
   unit:
