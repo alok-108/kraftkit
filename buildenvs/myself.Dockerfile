@@ -15,13 +15,21 @@ RUN set -xe; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
       build-essential \
-      cmake \
+      ca-certificates \
       clang \
+      cmake \
+      curl \
+      git \
+      liblzo2-dev \
+      libnl-3-dev \
+      libnl-genl-3-dev \
+      libnl-route-3-dev \
       libssh2-1-dev \
       libssl-dev \
+      libyajl-dev \
       make \
       pkg-config \
-      git; \
+    ; \
     apt-get clean; \
     go install mvdan.cc/gofumpt@v0.7.0; \
     git config --global --add safe.directory /go/src/kraftkit.sh;
