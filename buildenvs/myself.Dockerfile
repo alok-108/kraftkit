@@ -3,7 +3,7 @@
 # Licensed under the BSD-3-Clause License (the "License").
 # You may not use this file except in compliance with the License.
 
-ARG GO_VERSION=1.23.3
+ARG GO_VERSION=1.23.4
 ARG XEN_VERSION=4.18
 ARG REGISTRY=kraftkit.sh
 
@@ -15,13 +15,21 @@ RUN set -xe; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
       build-essential \
-      cmake \
+      ca-certificates \
       clang \
+      cmake \
+      curl \
+      git \
+      liblzo2-dev \
+      libnl-3-dev \
+      libnl-genl-3-dev \
+      libnl-route-3-dev \
       libssh2-1-dev \
       libssl-dev \
+      libyajl-dev \
       make \
       pkg-config \
-      git; \
+    ; \
     apt-get clean; \
     go install mvdan.cc/gofumpt@v0.7.0; \
     git config --global --add safe.directory /go/src/kraftkit.sh;
@@ -36,23 +44,23 @@ RUN set -xe; \
     mv cosign-linux-amd64 /usr/local/bin/cosign; \
     chmod +x /usr/local/bin/cosign;
 
-COPY --from=xen /usr/local/lib/libxen*.a /usr/local/lib/libxen*.so* /usr/local/lib
+COPY --from=xen /usr/local/lib/libxen*.a /usr/local/lib/libxen*.so* /usr/local/lib/
 COPY --from=xen /usr/local/include/* /usr/local/include/
 COPY --from=xen /usr/lib/x86_64-linux-gnu/liblzma.a \
-				/usr/lib/x86_64-linux-gnu/libbz2.a \
-				/usr/lib/x86_64-linux-gnu/libzstd.a \
-				/usr/lib/x86_64-linux-gnu/liblzo2.a \
-				/usr/lib/x86_64-linux-gnu/libyajl.a \
-				/usr/lib/x86_64-linux-gnu/libz.a \
-				/usr/lib/x86_64-linux-gnu/libnl-route-3.a \
-				/usr/lib/x86_64-linux-gnu/libnl-3.a \
-				/usr/lib/x86_64-linux-gnu/libuuid.a \
-				/usr/lib/x86_64-linux-gnu/libutil.a \
-				/usr/lib/x86_64-linux-gnu
+                /usr/lib/x86_64-linux-gnu/libbz2.a \
+                /usr/lib/x86_64-linux-gnu/libzstd.a \
+                /usr/lib/x86_64-linux-gnu/liblzo2.a \
+                /usr/lib/x86_64-linux-gnu/libyajl.a \
+                /usr/lib/x86_64-linux-gnu/libz.a \
+                /usr/lib/x86_64-linux-gnu/libnl-route-3.a \
+                /usr/lib/x86_64-linux-gnu/libnl-3.a \
+                /usr/lib/x86_64-linux-gnu/libuuid.a \
+                /usr/lib/x86_64-linux-gnu/libutil.a \
+                /usr/lib/x86_64-linux-gnu/
 
 WORKDIR /go/src/kraftkit.sh
 
-COPY --from=ghcr.io/goreleaser/goreleaser-cross:v1.23.3 /usr/bin/goreleaser /usr/bin/
+COPY --from=ghcr.io/goreleaser/goreleaser-cross:v1.24.0 /usr/bin/goreleaser /usr/bin/
 
 ENV DOCKER=
 ENV GOROOT=/usr/local/go

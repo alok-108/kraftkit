@@ -1,6 +1,6 @@
 module kraftkit.sh/tools/github-action
 
-go 1.23.3
+go 1.23.4
 
 require (
 	github.com/mattn/go-shellwords v1.0.12

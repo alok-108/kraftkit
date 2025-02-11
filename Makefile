@@ -23,6 +23,7 @@ TOOLS       ?= github-action \
 GOMOD       ?= kraftkit.sh
 IMAGE_TAG   ?= latest
 GO_VERSION  ?= 1.23
+TAGS        ?=
 
 # Add a special version tag for pull requests
 ifneq ($(shell grep 'refs/pull' $(WORKDIR)/.git/FETCH_HEAD),)
@@ -72,18 +73,51 @@ GOCILINT_VERSION   ?= v1.62.2
 GOCILINT           ?= $(GO) run github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOCILINT_VERSION)
 YTT_VERSION        ?= v0.51.0
 YTT                ?= $(GO) run carvel.dev/ytt/cmd/ytt@$(YTT_VERSION)
-GORELEASER_VERSION ?= v1.25.1
-GORELEASER         ?= $(GO) run github.com/goreleaser/goreleaser@$(GORELEASER_VERSION)
+GORELEASER_VERSION ?= v2.7.0
+GORELEASER         ?= $(GO) run github.com/goreleaser/goreleaser/v2@$(GORELEASER_VERSION)
 GINKGO_VERSION     ?= v2.22.0
 GINKGO             ?= $(GO) run github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 # Misc
 Q           ?= @
-
+NULL        :=
+SPACE       := $(NULL) #
+COMMA       := ,
 UNAME_OS    ?= $(shell uname -s)
 UNAME_ARCH  ?= $(shell uname -m)
 GOOS        ?= linux
 GOARCH      ?= amd64
+
+# Flags
+XEN_LDFLAGS :=
+ifeq ($(XEN),y)
+# Xen flags must be in this order.
+XEN_LDFLAGS := -lyajl \
+               -Wl,--whole-archive \
+               -llzma \
+               -lbz2 \
+               -lzstd \
+               -llzo2 \
+               -lxenguest \
+               -Wl,--no-whole-archive \
+               -lxenevtchn \
+               -lxenlight \
+               -lxenstore \
+               -lxenctrl \
+               -lxenforeignmemory \
+               -lxenforeignmemory \
+               -lxencall \
+               -lxentoolcore \
+               -lxenhypfs \
+               -lxendevicemodel \
+               -lxengnttab \
+               -lxentoollog \
+               -lz \
+               -lnl-route-3 \
+               -lnl-3 \
+               -luuid \
+               -lutil
+endif
 
 # Don't try to pass the path to Darwin host's make into the container
 ifeq ($(UNAME_OS),Darwin)
@@ -140,20 +174,21 @@ $(addprefix $(.PROXY), $(BIN)): GO_GCFLAGS ?= -N -l
 else
 $(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS ?= -s -w
 endif
-
-ifeq ($(XEN), y)
-$(addprefix $.PROXY), $(BIN)): TAGS ?= xen,
+ifeq ($(XEN),y)
+$(addprefix $(.PROXY), $(BIN)): TAGS += xen
 endif
-$(addprefix $(.PROXY), $(BIN)): TAGS += containers_image_storage_stub,containers_image_openpgp
+$(addprefix $(.PROXY), $(BIN)): TAGS += containers_image_storage_stub
+$(addprefix $(.PROXY), $(BIN)): TAGS += containers_image_openpgp
 $(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.version=$(VERSION)"
 $(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.commit=$(GIT_SHA)"
 $(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.buildTime=$(shell date)"
+$(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS += -extldflags "-static $(XEN_LDFLAGS)"
 $(addprefix $(.PROXY), $(BIN)):
 	GOOS=$(GOOS) \
 	GOARCH=$(GOARCH) \
 	$(GO) build \
 		-v \
-		-tags '$(TAGS)' \
+		-tags '$(subst $(SPACE),$(COMMA),$(TAGS))' \
 		-buildmode=pie \
 		-gcflags=all='$(GO_GCFLAGS)' \
 		-ldflags='$(GO_LDFLAGS)' \
@@ -169,16 +204,18 @@ else
 $(addprefix $(.PROXY), $(TOOLS)): GO_LDFLAGS ?= -s -w
 endif
 ifeq ($(XEN), y)
-$(addprefix $.PROXY), $(TOOLS)): TAGS ?= xen,
+$(addprefix $(.PROXY), $(TOOLS)): TAGS += xen
 endif
-$(addprefix $(.PROXY), $(TOOLS)): TAGS += containers_image_storage_stub,containers_image_openpgp
+$(addprefix $(.PROXY), $(TOOLS)): TAGS += containers_image_storage_stub
+$(addprefix $(.PROXY), $(TOOLS)): TAGS += containers_image_openpgp
 $(addprefix $(.PROXY), $(TOOLS)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.version=$(VERSION)"
 $(addprefix $(.PROXY), $(TOOLS)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.commit=$(GIT_SHA)"
 $(addprefix $(.PROXY), $(TOOLS)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.buildTime=$(shell date)"
+$(addprefix $(.PROXY), $(TOOLS)): GO_LDFLAGS += -extldflags "-static $(XEN_LDFLAGS)"
 $(addprefix $(.PROXY), $(TOOLS)):
 	(cd $(WORKDIR)/tools/$@ && \
 		$(GO) build -v \
-		-tags "containers_image_storage_stub,containers_image_openpgp" \
+		-tags '$(subst $(SPACE),$(COMMA),$(TAGS))' \
 		-o $(DISTDIR)/$@ \
 		-gcflags=all='$(GO_GCFLAGS)' \
 		-ldflags='$(GO_LDFLAGS)' \

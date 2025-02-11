@@ -12,6 +12,7 @@ on:
       - 'buildenvs/base.Dockerfile'
       - 'buildenvs/base-golang.Dockerfile'
       - 'buildenvs/github-action.Dockerfile'
+      - 'buildenvs/xen.Dockerfile'
       - '.github/workflows/buildenvs.yaml'
       - 'tools/github-action/**'
       - 'action.yml'
@@ -41,6 +42,7 @@ jobs:
             contains(steps.changed-files.outputs.all_changed_files, 'buildenvs/base-golang.Dockerfile') ||
             contains(steps.changed-files.outputs.all_changed_files, 'buildenvs/myself.Dockerfile') ||
             contains(steps.changed-files.outputs.all_changed_files, 'buildenvs/github-action.Dockerfile') ||
+            contains(steps.changed-files.outputs.all_changed_files, 'buildenvs/xen.Dockerfile') ||
             contains(steps.changed-files.outputs.all_changed_files, '.github/workflows/buildenvs.yaml') ||
             contains(steps.changed-files.outputs.all_changed_files, 'tools/github-action/') ||
             contains(steps.changed-files.outputs.all_changed_files, 'action.yml')
@@ -97,6 +99,79 @@ jobs:
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
 
+  xen:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - XEN_VERSION: 4.18
+
+    steps:
+      - name: Get changed files
+        if: ${{ github.event_name == 'pull_request' }}
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+
+      - name: Check should run
+        id: check-run
+        if: >
+          github.event_name == 'pull_request' &&
+          (
+            contains(steps.changed-files.outputs.all_changed_files, 'buildenvs/xen.Dockerfile') ||
+            contains(steps.changed-files.outputs.all_changed_files, '.github/workflows/buildenvs.yaml')
+          ) ||
+          github.event_name == 'push'
+        run: |
+          echo "run=true" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        if: ${{ steps.check-run.outputs.run == 'true' }}
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        if: ${{ steps.check-run.outputs.run == 'true' }}
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to OCI registry
+        if: ${{ steps.check-run.outputs.run == 'true' && github.event_name == 'push' }}
+        uses: docker/login-action@v3
+        with:
+          registry: index.unikraft.io
+          username: ${{ secrets.REG_USERNAME }}
+          password: ${{ secrets.REG_TOKEN }}
+
+      - name: Build OCI image
+        if: ${{ steps.check-run.outputs.run == 'true' }}
+        uses: docker/build-push-action@v6
+        with:
+          push: false
+          file: ./buildenvs/xen.Dockerfile
+          tags: kraftkit.sh/xen:${{ matrix.XEN_VERSION }}
+          platforms: linux/amd64
+          secrets: |
+            GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: type=docker,dest=/tmp/xen-${{ matrix.XEN_VERSION }}.tar
+
+      - name: Upload Docker image artifact
+        if: ${{ steps.check-run.outputs.run == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: xen-oci-image
+          path: /tmp/xen-${{ matrix.XEN_VERSION }}.tar
+
+      - name: Push OCI Image
+        if: ${{ steps.check-run.outputs.run == 'true' && github.event_name == 'push' }}
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: index.unikraft.io/kraftkit.sh/xen:${{ matrix.XEN_VERSION }}
+          platforms: linux/amd64
+          file: ./buildenvs/xen.Dockerfile
+          secrets: |
+            GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
+
   myself:
     runs-on: ubuntu-latest
     steps:
@@ -114,6 +189,7 @@ jobs:
             contains(steps.changed-files.outputs.all_changed_files, 'buildenvs/base.Dockerfile') ||
             contains(steps.changed-files.outputs.all_changed_files, 'buildenvs/base-golang.Dockerfile') ||
             contains(steps.changed-files.outputs.all_changed_files, 'buildenvs/github-action.Dockerfile') ||
+            contains(steps.changed-files.outputs.all_changed_files, 'buildenvs/xen.Dockerfile') ||
             contains(steps.changed-files.outputs.all_changed_files, '.github/workflows/buildenvs.yaml') ||
             contains(steps.changed-files.outputs.all_changed_files, 'tools/github-action/') ||
             contains(steps.changed-files.outputs.all_changed_files, 'action.yml')
@@ -184,7 +260,7 @@ jobs:
 
   base:
     runs-on: ubuntu-latest
-    needs: [qemu, myself]
+    needs: [xen, qemu, myself]
 
     steps:
       - name: Get changed files

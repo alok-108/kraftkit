@@ -1,6 +1,6 @@
 module kraftkit.sh
 
-go 1.23.3
+go 1.23.4
 
 require (
 	api.zip v0.1.6-0.20241212232756-c2fd6fe01821
@@ -85,7 +85,7 @@ require (
 	oras.land/oras-go/v2 v2.5.0
 	sdk.kraft.cloud v0.5.10-0.20250205112406-30f58ef4bb5b
 	sigs.k8s.io/kustomize/kyaml v0.19.0
-	xenbits.xenproject.org/git-http/xen.git/tools/golang/xenlight v0.0.0-20240402142354-17cf285d87e2
+	xenbits.xenproject.org/git-http/xen.git/tools/golang/xenlight v0.0.0-20231116214421-d75f1e9b7431
 )
 
 require (
