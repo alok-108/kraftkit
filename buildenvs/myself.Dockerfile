@@ -36,7 +36,7 @@ RUN set -xe; \
     mv cosign-linux-amd64 /usr/local/bin/cosign; \
     chmod +x /usr/local/bin/cosign;
 
-COPY --from=xen /usr/local/lib/libxen*.a /usr/local/lib/libxen*.so* /usr/local/lib
+COPY --from=xen /usr/local/lib/libxen*.a /usr/local/lib/libxen*.so* /usr/local/lib/
 COPY --from=xen /usr/local/include/* /usr/local/include/
 COPY --from=xen /usr/lib/x86_64-linux-gnu/liblzma.a \
                 /usr/lib/x86_64-linux-gnu/libbz2.a \
@@ -48,7 +48,7 @@ COPY --from=xen /usr/lib/x86_64-linux-gnu/liblzma.a \
                 /usr/lib/x86_64-linux-gnu/libnl-3.a \
                 /usr/lib/x86_64-linux-gnu/libuuid.a \
                 /usr/lib/x86_64-linux-gnu/libutil.a \
-                /usr/lib/x86_64-linux-gnu
+                /usr/lib/x86_64-linux-gnu/
 
 WORKDIR /go/src/kraftkit.sh
 
