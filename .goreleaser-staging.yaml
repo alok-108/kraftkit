@@ -140,7 +140,7 @@ builds:
       - -X {{ .Env.GOMOD }}/internal/version.version={{ .Version }}
       - -X {{ .Env.GOMOD }}/internal/version.commit={{ .Commit }}
       - -X {{ .Env.GOMOD }}/internal/version.buildTime={{ .Date }}
-      #@ if bin == "kraft" and os == "linux":
+      #@ if bin == "kraft" and os == "linux" and arch == "amd64":
       - -extldflags "-static -lyajl -Wl,--whole-archive -llzma -lbz2 -lzstd -llzo2
         -lxenguest -Wl,--no-whole-archive -lxenevtchn -lxenlight -lxenstore -lxenctrl
         -lxenforeignmemory -lxenforeignmemory -lxencall -lxentoolcore -lxenhypfs
@@ -151,7 +151,7 @@ builds:
     tags:
       - containers_image_storage_stub
       - containers_image_openpgp
-      #@ if bin == "kraft" and os == "linux":
+      #@ if bin == "kraft" and os == "linux" and arch == "amd64":
       - xen
       #@ end
 #@ end
