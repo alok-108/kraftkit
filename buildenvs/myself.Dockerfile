@@ -3,7 +3,7 @@
 # Licensed under the BSD-3-Clause License (the "License").
 # You may not use this file except in compliance with the License.
 
-ARG GO_VERSION=1.23.3
+ARG GO_VERSION=1.23.4
 ARG XEN_VERSION=4.18
 ARG REGISTRY=kraftkit.sh
 
