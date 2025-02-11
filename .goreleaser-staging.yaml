@@ -141,10 +141,34 @@ builds:
       - -X {{ .Env.GOMOD }}/internal/version.commit={{ .Commit }}
       - -X {{ .Env.GOMOD }}/internal/version.buildTime={{ .Date }}
       #@ if bin == "kraft" and os == "linux" and arch == "amd64":
-      - -extldflags "-static -lyajl -Wl,--whole-archive -llzma -lbz2 -lzstd -llzo2
-        -lxenguest -Wl,--no-whole-archive -lxenevtchn -lxenlight -lxenstore -lxenctrl
-        -lxenforeignmemory -lxenforeignmemory -lxencall -lxentoolcore -lxenhypfs
-        -lxendevicemodel -lxengnttab -lxentoollog -lz -lnl-route-3 -lnl-3 -luuid -lutil"
+      - -extldflags "
+        -static
+        -lyajl
+        -Wl,--whole-archive
+        -llzma
+        -lbz2
+        -lzstd
+        -llzo2
+        -lxenguest
+        -Wl,--no-whole-archive
+        -lxenevtchn
+        -lxenlight
+        -lxenstore
+        -lxenctrl
+        -lxenforeignmemory
+        -lxenforeignmemory
+        -lxencall
+        -lxentoolcore
+        -lxenhypfs
+        -lxendevicemodel
+        -lxengnttab
+        -lxentoollog
+        -lz
+        -lnl-route-3
+        -lnl-3
+        -luuid
+        -lutil
+        "
       #@ else:
       - -extldflags "-static"
       #@ end
