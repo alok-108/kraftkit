@@ -30,9 +30,12 @@ func RemoteImage(ref name.Reference, options ...remote.Option) (v1.Image, error)
 		goto lookup
 	}
 
+	imageCacheMu.Lock()
 	if image, ok := imageCache[name]; ok {
+		imageCacheMu.Unlock()
 		return image, nil
 	}
+	imageCacheMu.Unlock()
 
 lookup:
 	v1Image, err := remote.Image(ref, options...)
