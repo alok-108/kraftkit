@@ -20,7 +20,7 @@ RUN set -xe; \
     git config \
         --global \
         --add safe.directory /go/src/kraftkit.sh; \
-    DOCKER= DISTDIR=/ make github-action;
+    DOCKER= DISTDIR=/ XEN=n CGO_ENABLED=0 make github-action;
 
 FROM ${REGISTRY}/qemu:${QEMU_VERSION} AS qemu
 FROM ${REGISTRY}/myself:${KRAFTKIT_VERSION} AS kraftkit
