@@ -203,7 +203,7 @@ $(addprefix $(.PROXY), $(TOOLS)): GO_GCFLAGS ?= -N -l
 else
 $(addprefix $(.PROXY), $(TOOLS)): GO_LDFLAGS ?= -s -w
 endif
-ifeq ($(XEN), y)
+ifeq ($(XEN),y)
 $(addprefix $(.PROXY), $(TOOLS)): TAGS += xen
 endif
 $(addprefix $(.PROXY), $(TOOLS)): TAGS += containers_image_storage_stub

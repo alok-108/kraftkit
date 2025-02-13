@@ -39,13 +39,15 @@ type Webinstall struct {
 }
 
 func New() *cobra.Command {
-	return cmdfactory.New(&Webinstall{}, cobra.Command{
+	cmd, _ := cmdfactory.New(&Webinstall{}, cobra.Command{
 		Short:                 `Serve a script to install kraftkit`,
 		Use:                   "webinstall",
 		Long:                  `Serve a script to install kraftkit that installs the correct packages`,
 		DisableFlagsInUseLine: true,
 		Example:               `webinstall -P 8080 -F 24`,
 	})
+
+	return cmd
 }
 
 func (opts *Webinstall) getKraftkitVersion(ctx context.Context) (string, error) {
@@ -95,7 +97,7 @@ func (opts *Webinstall) getKraftkitVersion(ctx context.Context) (string, error) 
 }
 
 // doRootCmd starts the main system
-func (opts *Webinstall) Run(cmd *cobra.Command, args []string) error {
+func (opts *Webinstall) Run(ctx context.Context, args []string) error {
 	// Set the defaults if empty
 	if opts.Freq == 0 {
 		opts.Freq = DefaultFreq
@@ -104,8 +106,6 @@ func (opts *Webinstall) Run(cmd *cobra.Command, args []string) error {
 	if opts.Port == 0 {
 		opts.Port = DefaultPort
 	}
-
-	ctx := cmd.Context()
 
 	// Configure the log level
 	logger := logrus.New()
