@@ -24,7 +24,7 @@ PLATFORM     ?= linux/x86_64
 WITH_CACHE   ?= y
 
 .PHONY: xen
-xen: XEN_VERSION   ?= 4.18
+xen: XEN_VERSION   ?= 4.19
 xen: MAKE_NPROC    ?= $(shell nproc)
 xen: ENVIRONMENT   ?= xen
 xen: IMAGE         ?= $(REGISTRY)/xen:$(XEN_VERSION)
@@ -68,7 +68,7 @@ myself: GO_VERSION  ?= 1.23.4
 myself: ENVIRONMENT ?= myself
 myself: IMAGE       ?= $(REGISTRY)/myself:$(IMAGE_TAG)
 myself: TARGET      ?= kraftkit
-myself: XEN_VERSION ?= 4.18
+myself: XEN_VERSION ?= 4.19
 ifeq ($(WITH_CACHE),y)
 myself: _WITH_CACHE := --cache-from $(IMAGE)
 else
@@ -95,7 +95,7 @@ base: GO_VERSION       ?= 1.23.4
 base: IMAGE            ?= $(REGISTRY)/base:$(IMAGE_TAG)
 base: KRAFTKIT_VERSION ?= latest
 base: QEMU_VERSION     ?= 8.2.4
-base: XEN_VERSION      ?= 4.18
+base: XEN_VERSION      ?= 4.19
 ifeq ($(WITH_CACHE),y)
 base: _WITH_CACHE      := --cache-from $(IMAGE)
 else
@@ -120,7 +120,7 @@ base-golang: GO_VERSION       ?= 1.23.4
 base-golang: IMAGE            ?= $(REGISTRY)/base-golang:$(IMAGE_TAG)
 base-golang: KRAFTKIT_VERSION ?= latest
 base-golang: QEMU_VERSION     ?= 8.2.4
-base-golang: XEN_VERSION      ?= 4.18
+base-golang: XEN_VERSION      ?= 4.19
 ifeq ($(WITH_CACHE),y)
 base-golang: _WITH_CACHE      := --cache-from $(IMAGE)
 else

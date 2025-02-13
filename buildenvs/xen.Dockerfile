@@ -7,7 +7,7 @@ ARG DEBIAN_VERSION=bookworm-20240513
 
 FROM debian:${DEBIAN_VERSION} AS xenbuild
 
-ARG XEN_VERSION=4.18
+ARG XEN_VERSION=4.19
 ARG MAKE_NPROC=1
 
 # The sed line should stay here until [1] is merged or forever if it's not

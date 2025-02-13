@@ -85,7 +85,7 @@ require (
 	oras.land/oras-go/v2 v2.5.0
 	sdk.kraft.cloud v0.5.10-0.20250205112406-30f58ef4bb5b
 	sigs.k8s.io/kustomize/kyaml v0.19.0
-	xenbits.xenproject.org/git-http/xen.git/tools/golang/xenlight v0.0.0-20231116214421-d75f1e9b7431
+	xenbits.xenproject.org/git-http/xen.git/tools/golang/xenlight v0.0.0-20240729172045-026c9fa29716
 )
 
 require (
