@@ -25,6 +25,7 @@ import (
 type InfoOptions struct {
 	Output string `long:"output" short:"o" usage:"Set output format. Options: table,yaml,json,list" default:"table"`
 	Update bool   `long:"update" short:"u" usage:"Get latest information about components before listing results"`
+	Format string `long:"as" short:"f" usage:"Set the package format" default:"auto"`
 }
 
 // Info shows package information.
@@ -76,6 +77,15 @@ func (opts *InfoOptions) Run(ctx context.Context, args []string) error {
 
 	parallel := !config.G[config.KraftKit](ctx).NoParallel
 	norender := log.LoggerTypeFromString(config.G[config.KraftKit](ctx).Log.Type) != log.FANCY
+	pm := packmanager.G(ctx)
+
+	// Force a particular package manager
+	if len(opts.Format) > 0 && opts.Format != "auto" {
+		pm, err = pm.From(pack.PackageFormat(opts.Format))
+		if err != nil {
+			return err
+		}
+	}
 
 	var searches []*processtree.ProcessTreeItem
 	var packs []pack.Package
@@ -84,7 +94,7 @@ func (opts *InfoOptions) Run(ctx context.Context, args []string) error {
 		search := processtree.NewProcessTreeItem(
 			fmt.Sprintf("finding %s", arg), "",
 			func(ctx context.Context) error {
-				more, err := packmanager.G(ctx).Catalog(ctx,
+				more, err := pm.Catalog(ctx,
 					packmanager.WithName(arg),
 					packmanager.WithRemote(opts.Update),
 				)
