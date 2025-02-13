@@ -215,6 +215,43 @@ func (initrd *dockerfile) Name() string {
 	return "Dockerfile"
 }
 
+func startBuildkit(ctx context.Context, buildkitVersion string, port int, printf *testcontainersPrintf) (testcontainers.Container, error) {
+	// Trap any panics that occur when instantiating BuildKit through the
+	// testcontainers library. This is known happen if Docker is not installed.
+	// For more information see:
+	//
+	// https://github.com/unikraft/kraftkit/issues/2001
+	defer func() {
+		if r := recover(); r != nil {
+			log.G(ctx).Warn("recovered from BuildKit instantiation panic!")
+			log.G(ctx).Warn("this can be caused by Docker missing from the system, or from being inaccesible")
+			log.G(ctx).Warn("")
+			log.G(ctx).Warn("if you think this was caused by something else, please open an issue at:")
+			log.G(ctx).Warn("https://github.com/unikraft/kraftkit/issues")
+		}
+	}()
+	return testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		Started: true,
+		Logger:  printf,
+		ContainerRequest: testcontainers.ContainerRequest{
+			AlwaysPullImage: true,
+			Image:           "moby/buildkit:" + buildkitVersion,
+			WaitingFor:      wait.ForLog(fmt.Sprintf("running server on [::]:%d", port)),
+			Privileged:      true,
+			ExposedPorts:    []string{fmt.Sprintf("%d:%d/tcp", port, port)},
+			Cmd:             []string{"--addr", fmt.Sprintf("tcp://0.0.0.0:%d", port)},
+			Mounts: testcontainers.ContainerMounts{
+				{
+					Source: testcontainers.GenericVolumeMountSource{
+						Name: "kraftkit-buildkit-cache",
+					},
+					Target: "/var/lib/buildkit",
+				},
+			},
+		},
+	})
+}
+
 // Build implements Initrd.
 func (initrd *dockerfile) Build(ctx context.Context) (string, error) {
 	if initrd.opts.output == "" {
@@ -300,26 +337,7 @@ func (initrd *dockerfile) Build(ctx context.Context) (string, error) {
 		port := l.Addr().(*net.TCPAddr).Port
 		_ = l.Close()
 
-		buildkitd, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-			Started: true,
-			Logger:  printf,
-			ContainerRequest: testcontainers.ContainerRequest{
-				AlwaysPullImage: true,
-				Image:           "moby/buildkit:" + buildkitVersion,
-				WaitingFor:      wait.ForLog(fmt.Sprintf("running server on [::]:%d", port)),
-				Privileged:      true,
-				ExposedPorts:    []string{fmt.Sprintf("%d:%d/tcp", port, port)},
-				Cmd:             []string{"--addr", fmt.Sprintf("tcp://0.0.0.0:%d", port)},
-				Mounts: testcontainers.ContainerMounts{
-					{
-						Source: testcontainers.GenericVolumeMountSource{
-							Name: "kraftkit-buildkit-cache",
-						},
-						Target: "/var/lib/buildkit",
-					},
-				},
-			},
-		})
+		buildkitd, err := startBuildkit(ctx, buildkitVersion, port, printf)
 		if err != nil {
 			return "", fmt.Errorf("creating buildkit container: %w", err)
 		}
