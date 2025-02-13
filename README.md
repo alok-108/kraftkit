@@ -143,6 +143,28 @@ jobs:
 For other CI's and integrations, including GitLab, check out [the getting started guide](https://unikraft.org/docs/getting-started).
 
 
+## Compatibility
+
+| Hypervisor  | Supported Version    |
+|-------------|----------------------|
+| Xen         | <= 4.19              |
+| QEMU        | <= 8.2.4 && >= 4.2.0 |
+| Firecracker | >= 1.4.1             |
+
+|                 | QEMU | Firecracker | Xen | [containerd](/oci/README.md#supported-backends) |
+|-----------------|------|-------------|-----|-------------------------------------------------|
+| `linux/amd64`   | ✅   | ✅          | ✅  | ✅                                              |
+| `linux/arm64`   | ✅   | ✅          | --  | ✅                                              |
+| `darwin/amd64`  | ✅   | --          | --  | ✅                                              |
+| `darwin/arm64`  | ✅   | --          | --  | ✅                                              |
+| `freebsd/amd64` | ✅   | --          | --  | ✅                                              |
+| `freebsd/arm64` | ✅   | --          | --  | ✅                                              |
+| `netbsd/amd64`  | ✅   | --          | --  | --                                              |
+| `netbsd/arm64`  | ✅   | --          | --  | --                                              |
+| `openbsd/amd64` | ✅   | --          | --  | --                                              |
+| `openbsd/arm64` | ✅   | --          | --  | --                                              |
+
+
 ## Support, Community & Meetings
 
 If you have any further questions or need more information about KraftKit or Unikraft, please refer to [the official Unikraft documentation][unikraft-docs] or ask for help on the Unikraft community forum.
