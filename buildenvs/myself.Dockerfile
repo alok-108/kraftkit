@@ -4,7 +4,7 @@
 # You may not use this file except in compliance with the License.
 
 ARG GO_VERSION=1.23.4
-ARG XEN_VERSION=4.18
+ARG XEN_VERSION=4.19
 ARG REGISTRY=kraftkit.sh
 
 FROM ${REGISTRY}/xen:${XEN_VERSION} AS xen
