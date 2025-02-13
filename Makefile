@@ -24,6 +24,7 @@ GOMOD       ?= kraftkit.sh
 IMAGE_TAG   ?= latest
 GO_VERSION  ?= 1.23
 TAGS        ?=
+STATIC      ?= y
 
 # Add a special version tag for pull requests
 ifneq ($(shell grep 'refs/pull' $(WORKDIR)/.git/FETCH_HEAD),)
@@ -182,7 +183,11 @@ $(addprefix $(.PROXY), $(BIN)): TAGS += containers_image_openpgp
 $(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.version=$(VERSION)"
 $(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.commit=$(GIT_SHA)"
 $(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.buildTime=$(shell date)"
+ifeq ($(STATIC),y)
 $(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS += -extldflags "-static $(XEN_LDFLAGS)"
+else
+$(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS += -extldflags "$(XEN_LDFLAGS)"
+endif
 $(addprefix $(.PROXY), $(BIN)):
 	GOOS=$(GOOS) \
 	GOARCH=$(GOARCH) \
@@ -211,7 +216,11 @@ $(addprefix $(.PROXY), $(TOOLS)): TAGS += containers_image_openpgp
 $(addprefix $(.PROXY), $(TOOLS)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.version=$(VERSION)"
 $(addprefix $(.PROXY), $(TOOLS)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.commit=$(GIT_SHA)"
 $(addprefix $(.PROXY), $(TOOLS)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.buildTime=$(shell date)"
+ifeq ($(STATIC),y)
 $(addprefix $(.PROXY), $(TOOLS)): GO_LDFLAGS += -extldflags "-static $(XEN_LDFLAGS)"
+else
+$(addprefix $(.PROXY), $(TOOLS)): GO_LDFLAGS += -extldflags "$(XEN_LDFLAGS)"
+endif
 $(addprefix $(.PROXY), $(TOOLS)):
 	(cd $(WORKDIR)/tools/$@ && \
 		$(GO) build -v \
