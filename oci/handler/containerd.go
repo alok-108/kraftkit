@@ -1,3 +1,6 @@
+//go:build !openbsd && !netbsd
+// +build !openbsd,!netbsd
+
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright (c) 2022, Unikraft GmbH and The KraftKit Authors.
 // Licensed under the BSD-3-Clause License (the "License").

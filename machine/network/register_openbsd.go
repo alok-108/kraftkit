@@ -19,7 +19,7 @@ func hostSupportedStrategies() map[string]*Strategy {
 	return map[string]*Strategy{
 		"bridge": {
 			NewNetworkV1alpha1: func(ctx context.Context, opts ...any) (networkv1alpha1.NetworkService, error) {
-				return nil, errors.New("network service is not supported on freeBSD")
+				return nil, errors.New("network service is not supported on openBSD")
 			},
 		},
 	}
