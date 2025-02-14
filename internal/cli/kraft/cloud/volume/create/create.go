@@ -29,6 +29,7 @@ type CreateOptions struct {
 	Metro  string                   `noattribute:"true"`
 	Name   string                   `local:"true" long:"name" short:"n" usage:"Name of the volume"`
 	Size   string                   `local:"true" long:"size" short:"s" usage:"Size (MiB increments or suffixes like Mi, Gi, etc.)"`
+	From   string                   `local:"true" long:"from" short:"f" usage:"Name or UUID of the template to create from"`
 	Token  string                   `noattribute:"true"`
 }
 
@@ -53,23 +54,44 @@ func Create(ctx context.Context, opts *CreateOptions) (*kcvolumes.CreateResponse
 		)
 	}
 
-	if _, err := strconv.ParseUint(opts.Size, 10, 64); err == nil {
-		opts.Size = fmt.Sprintf("%sMi", opts.Size)
+	req := &kcvolumes.CreateRequest{}
+
+	if opts.Name != "" {
+		req.Name = &opts.Name
 	}
 
-	qty, err := resource.ParseQuantity(opts.Size)
-	if err != nil {
-		return nil, fmt.Errorf("could not parse size quantity: %w", err)
+	if opts.Size != "" {
+		if _, err := strconv.ParseUint(opts.Size, 10, 64); err == nil {
+			opts.Size = fmt.Sprintf("%sMi", opts.Size)
+		}
+
+		qty, err := resource.ParseQuantity(opts.Size)
+		if err != nil {
+			return nil, fmt.Errorf("could not parse size quantity: %w", err)
+		}
+
+		if qty.Value() < 1024*1024 && qty.Value() != 0 {
+			return nil, fmt.Errorf("size must be at least 1Mi")
+		}
+
+		// Convert to MiB
+		sizeMB := int(qty.Value() / (1024 * 1024))
+		req.SizeMb = &sizeMB
 	}
 
-	if qty.Value() < 1024*1024 {
-		return nil, fmt.Errorf("size must be at least 1Mi")
+	if opts.From != "" {
+		if utils.IsUUID(opts.From) {
+			req.Template = &kcvolumes.CreateRequestTemplate{
+				UUID: &opts.From,
+			}
+		} else {
+			req.Template = &kcvolumes.CreateRequestTemplate{
+				Name: &opts.From,
+			}
+		}
 	}
 
-	// Convert to MiB
-	sizeMB := int(qty.Value() / (1024 * 1024))
-
-	createResp, err := opts.Client.WithMetro(opts.Metro).Create(ctx, opts.Name, sizeMB)
+	createResp, err := opts.Client.WithMetro(opts.Metro).Create(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("creating volume: %w", err)
 	}
@@ -96,6 +118,9 @@ func NewCmd() *cobra.Command {
 
 			# Create a new persistent 10MiB volume with a random name
 			$ kraft cloud volume create --size 10Mi
+
+			# Create a new persistent volume named "my-volume" by cloning an existing template "existing-template"
+			$ kraft cloud volume create --from existing-template --name my-volume
 		`),
 		Annotations: map[string]string{
 			cmdfactory.AnnotationHelpGroup: "kraftcloud-volume",
@@ -109,8 +134,8 @@ func NewCmd() *cobra.Command {
 }
 
 func (opts *CreateOptions) Pre(cmd *cobra.Command, _ []string) error {
-	if opts.Size == "" {
-		return fmt.Errorf("must specify --size flag")
+	if opts.Size != "" && opts.From != "" {
+		return fmt.Errorf("cannot specify both 'size' and template 'from'")
 	}
 
 	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token)

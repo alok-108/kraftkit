@@ -455,7 +455,10 @@ func createVolumes(ctx context.Context, opts *UpOptions) (map[string]*kcclient.S
 				size = int(parsed) / 1024 / 1024
 			}
 
-			createResp, err := opts.Client.Volumes().WithMetro(opts.Metro).Create(ctx, name, size)
+			createResp, err := opts.Client.Volumes().WithMetro(opts.Metro).Create(ctx, &kcvolumes.CreateRequest{
+				Name:   &name,
+				SizeMb: &size,
+			})
 			if err != nil {
 				return nil, fmt.Errorf("creating volume: %w", err)
 			}

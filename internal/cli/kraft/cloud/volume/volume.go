@@ -13,7 +13,6 @@ import (
 	"github.com/spf13/pflag"
 
 	"kraftkit.sh/internal/cli/kraft/cloud/volume/attach"
-	"kraftkit.sh/internal/cli/kraft/cloud/volume/clone"
 	"kraftkit.sh/internal/cli/kraft/cloud/volume/create"
 	"kraftkit.sh/internal/cli/kraft/cloud/volume/detach"
 	"kraftkit.sh/internal/cli/kraft/cloud/volume/get"
@@ -48,7 +47,6 @@ func NewCmd() *cobra.Command {
 
 	cmd.AddCommand(attach.NewCmd())
 	cmd.AddCommand(detach.NewCmd())
-	cmd.AddCommand(clone.NewCmd())
 	cmd.AddCommand(create.NewCmd())
 	cmd.AddCommand(list.NewCmd())
 	cmd.AddCommand(remove.NewCmd())
