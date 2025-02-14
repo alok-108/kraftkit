@@ -28,21 +28,18 @@ In the directory implementation, the representation results in the following art
 
 ```
 /root/.local/share/kraftkit/runtime/oci
-├── configs
-│   └── sha256
-│       ├── 9530779d911fc36a50e156d36379d2e4d59eb259f28fba2311a80845a11988ec.json
-│       └── fe5f6abe40068df5d5e98a08dc2f697faa5d22c064ac890e4f1a160d2999c6c4.json
-├── indexes
-│   └── helloworld
-│       └── latest.json
-├── layers
-│   └── sha256
-│       ├── 784e290aec5e97bf1e9ba17759fb0df3188a7285b08fccc84f882be4f2f65064
-│       └── 989eddd15537fc00d20d560ae35c435b59b96c421412d75a85f22b7331a78aff
-└── manifests
-    └── sha256
-        ├── 656072e6e2bb60be3bd439460058c3240e29aa83e718e42fd213789d2bbfa0f0.json
-        └── 865cdfc985c9818b31b3b8094e405cd7e2d96fca4c19f07f38ef75a9077679d7.json
+├── indexes/
+│   └── helloworld/
+│       └── latest -> /root/.local/share/kraftkit/runtime/oci/digests/sha256/ce3ff4f9a957ab52f8187d03d8e45db4cbb35101ea4e65ff0f3f08b0ebbda111
+└── digests/
+    └── sha256/
+        ├── 089d3e4f1c08951c5bc7b0a41ab9fca5445ac06dea642679d243db00a1948f0d
+        ├── 784e290aec5e97bf1e9ba17759fb0df3188a7285b08fccc84f882be4f2f65064
+        ├── 9530779d911fc36a50e156d36379d2e4d59eb259f28fba2311a80845a11988ec
+        ├── 989eddd15537fc00d20d560ae35c435b59b96c421412d75a85f22b7331a78aff
+        ├── ce3ff4f9a957ab52f8187d03d8e45db4cbb35101ea4e65ff0f3f08b0ebbda111
+        ├── f63c483c81fd38dfc3c9088f7decaaec488cea3ff09648a5373ce6efb0c0234c
+        └── fe5f6abe40068df5d5e98a08dc2f697faa5d22c064ac890e4f1a160d2999c6c4
 ```
 
 For containerd it results the following objects within the content store:
