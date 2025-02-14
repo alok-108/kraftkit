@@ -323,7 +323,7 @@ func (m *ManifestManager) Catalog(ctx context.Context, qopts ...packmanager.Quer
 	}
 	mopts := []ManifestOption{
 		WithAuthConfig(auths),
-		WithCacheDir(config.G[config.KraftKit](ctx).Paths.Sources),
+		WithCacheDir(m.cacheDir),
 		WithUpdate(query.Remote()),
 		WithDefaultChannelName(m.defaultChannelName),
 	}
