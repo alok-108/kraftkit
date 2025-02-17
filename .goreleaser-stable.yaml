@@ -191,6 +191,9 @@ builds:
     main: #@ "./cmd/{}".format(bin)
     env:
       - GOMOD=kraftkit.sh
+    #@ if bin == "kraft" and not(os == "linux" and arch == "amd64"):
+      - CGO_ENABLED=0
+    #@ end
     goos:
       - #@ os
     goarch:
