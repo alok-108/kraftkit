@@ -51,7 +51,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: 1.23.4
+          go-version: 1.24.0
           cache: false
 
       - name: Set Go variables
@@ -97,7 +97,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23.4
+          go-version: 1.24.0
           cache: false
 
       - name: Set Go variables
@@ -148,7 +148,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23.4
+          go-version: 1.24.0
           cache: false
 
       - name: Set Go variables

@@ -22,7 +22,7 @@ TOOLS       ?= github-action \
                webinstall
 GOMOD       ?= kraftkit.sh
 IMAGE_TAG   ?= latest
-GO_VERSION  ?= 1.23
+GO_VERSION  ?= 1.24
 TAGS        ?=
 STATIC      ?= y
 
@@ -70,7 +70,7 @@ CMAKE       ?= cmake
 # Go tools
 GOFUMPT_VERSION    ?= v0.7.0
 GOFUMPT            ?= $(GO) run mvdan.cc/gofumpt@$(GOFUMPT_VERSION)
-GOCILINT_VERSION   ?= v1.62.2
+GOCILINT_VERSION   ?= v1.64.5
 GOCILINT           ?= $(GO) run github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOCILINT_VERSION)
 YTT_VERSION        ?= v0.51.0
 YTT                ?= $(GO) run carvel.dev/ytt/cmd/ytt@$(YTT_VERSION)
