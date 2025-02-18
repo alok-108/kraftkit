@@ -172,7 +172,9 @@ builds:
       #@ else:
       - -extldflags "-static"
       #@ end
+      #@ if bin == "kraft":
       - -X {{ .Env.GOMOD }}/internal/cli/kraft.sentryDsn={{ .Env.SENTRY_DSN }}
+      #@ end
     tags:
       - containers_image_storage_stub
       - containers_image_openpgp

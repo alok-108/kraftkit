@@ -36,7 +36,7 @@ jobs:
 
       - name: Generate GoReleaser configuration
         run: |
-          ytt --data-values-env SENTRY_DSN -f .goreleaser-stable.yaml > goreleaser-stable.yaml
+          ytt -f .goreleaser-stable.yaml > goreleaser-stable.yaml
 
       - name: Write cosign key and pubkey to file
         run: |
@@ -71,6 +71,7 @@ jobs:
           AUR_KEY: ${{ secrets.AUR_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
       - name: Create Sentry release
         uses: getsentry/action-release@v1
