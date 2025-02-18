@@ -9,7 +9,7 @@ ARG REGISTRY=kraftkit.sh
 ARG XEN_VERSION=4.19
 
 FROM ${REGISTRY}/qemu:${QEMU_VERSION}       AS qemu
-FROM ${REGISTRY}/xen:${XEN_VERSION}			AS xen
+FROM ${REGISTRY}/xen:${XEN_VERSION}         AS xen
 FROM ${REGISTRY}/myself:${KRAFTKIT_VERSION} AS myself
 FROM debian:${DEBIAN_VERSION}               AS base
 
