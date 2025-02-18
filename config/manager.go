@@ -5,10 +5,12 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 	"reflect"
+	"strconv"
 	"strings"
 	"syscall"
 )
@@ -112,6 +114,117 @@ func (cm *ConfigManager[C]) Write(merge bool) error {
 	for _, f := range cm.Feeders {
 		if err := f.Write(cm.Config, merge); err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+// convertType attempts to convert an arbitrary value to a target reflect.Type.
+func convertType(value any, targetType reflect.Type) (reflect.Value, error) {
+	val := reflect.ValueOf(value)
+
+	if val.Type().AssignableTo(targetType) {
+		return val, nil
+	}
+
+	switch targetType.Kind() {
+	case reflect.String:
+		return reflect.ValueOf(fmt.Sprintf("%v", value)), nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		switch v := value.(type) {
+		case string:
+			if intVal, err := strconv.ParseInt(v, 10, 64); err == nil {
+				return reflect.ValueOf(intVal).Convert(targetType), nil
+			}
+		case float64:
+			return reflect.ValueOf(int64(v)).Convert(targetType), nil
+		case bool:
+			if v {
+				return reflect.ValueOf(int64(1)).Convert(targetType), nil
+			}
+			return reflect.ValueOf(int64(0)).Convert(targetType), nil
+		}
+	case reflect.Float32, reflect.Float64:
+		switch v := value.(type) {
+		case string:
+			if floatVal, err := strconv.ParseFloat(v, 64); err == nil {
+				return reflect.ValueOf(floatVal).Convert(targetType), nil
+			}
+		case int:
+			return reflect.ValueOf(float64(v)).Convert(targetType), nil
+		case bool:
+			if v {
+				return reflect.ValueOf(float64(1.0)).Convert(targetType), nil
+			}
+			return reflect.ValueOf(float64(0.0)).Convert(targetType), nil
+		}
+	case reflect.Bool:
+		switch v := value.(type) {
+		case string:
+			if b, err := strconv.ParseBool(v); err == nil {
+				return reflect.ValueOf(b), nil
+			}
+		case int, int64:
+			return reflect.ValueOf(v != 0), nil
+		case float64:
+			return reflect.ValueOf(v != 0.0), nil
+		}
+	}
+
+	return reflect.Value{}, errors.New("unsupported type conversion")
+}
+
+// getYAMLTag extracts the YAML tag from a struct field.
+func getYAMLTag(field reflect.StructField, ok bool) string {
+	if !ok {
+		return ""
+	}
+	tag := field.Tag.Get("yaml")
+	if tag == "" {
+		return field.Name
+	}
+	return strings.Split(tag, ",")[0]
+}
+
+// Set updates any field in the config struct using a dot-separated key.
+func (cm *ConfigManager[C]) Set(key string, val any) error {
+	v := reflect.ValueOf(cm.Config)
+	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Struct {
+		return errors.New("cfg must be a pointer to a struct")
+	}
+
+	v = v.Elem() // Dereference the pointer
+	keys := strings.Split(key, ".")
+
+	for i, k := range keys {
+		field := v.FieldByNameFunc(func(f string) bool {
+			return getYAMLTag(v.Type().FieldByName(f)) == k
+		})
+
+		if !field.IsValid() {
+			return errors.New("invalid key: " + k)
+		}
+
+		if i == len(keys)-1 {
+			if !field.CanSet() {
+				return errors.New("cannot set field: " + k)
+			}
+			convertedVal, err := convertType(val, field.Type())
+			if err != nil {
+				return err
+			}
+			field.Set(convertedVal)
+			return nil
+		}
+
+		if field.Kind() == reflect.Ptr {
+			if field.IsNil() {
+				field.Set(reflect.New(field.Type().Elem()))
+			}
+			v = field.Elem()
+		} else {
+			v = field
 		}
 	}
 

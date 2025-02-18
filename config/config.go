@@ -15,23 +15,24 @@ type AuthConfig struct {
 }
 
 type KraftKit struct {
-	NoPrompt       bool   `yaml:"no_prompt" env:"KRAFTKIT_NO_PROMPT" long:"no-prompt" usage:"Do not prompt for user interaction" default:"false"`
-	NoParallel     bool   `yaml:"no_parallel" env:"KRAFTKIT_NO_PARALLEL" long:"no-parallel" usage:"Do not run internal tasks in parallel" default:"false"`
-	NoEmojis       bool   `yaml:"no_emojis" env:"KRAFTKIT_NO_EMOJIS" long:"no-emojis" usage:"Do not use emojis in any console output" default:"true"`
-	NoCheckUpdates bool   `yaml:"no_check_updates" env:"KRAFTKIT_NO_CHECK_UPDATES" long:"no-check-updates" usage:"Do not check for updates" default:"false"`
-	NoColor        bool   `yaml:"no_color" env:"KRAFTKIT_NO_COLOR" long:"no-color" usage:"Disable color output"`
-	NoWarnSudo     bool   `yaml:"no_warn_sudo" env:"KRAFTKIT_NO_WARN_SUDO" long:"no-warn-sudo" usage:"Do not warn on running via sudo" default:"false"`
-	Editor         string `yaml:"editor" env:"KRAFTKIT_EDITOR" long:"editor" usage:"Set the text editor to open when prompt to edit a file"`
-	GitProtocol    string `yaml:"git_protocol" env:"KRAFTKIT_GIT_PROTOCOL" long:"git-protocol" usage:"Preferred Git protocol to use" default:"https"`
-	Pager          string `yaml:"pager,omitempty" env:"KRAFTKIT_PAGER" long:"pager" usage:"System pager to pipe output to" default:"cat"`
-	Qemu           string `yaml:"qemu,omitempty" env:"KRAFTKIT_QEMU" long:"qemu" usage:"Path to QEMU executable" default:""`
-	HTTPUnixSocket string `yaml:"http_unix_socket,omitempty" env:"KRAFTKIT_HTTP_UNIX_SOCKET" long:"http-unix-sock" usage:"When making HTTP(S) connections, pipe requests via this shared socket"`
-	RuntimeDir     string `yaml:"runtime_dir" env:"KRAFTKIT_RUNTIME_DIR" long:"runtime-dir" usage:"Directory for placing runtime files (e.g. pidfiles)"`
-	DefaultPlat    string `yaml:"default_plat" env:"KRAFTKIT_DEFAULT_PLAT" usage:"The default platform to use when invoking platform-specific code" noattribute:"true"`
-	DefaultArch    string `yaml:"default_arch" env:"KRAFTKIT_DEFAULT_ARCH" usage:"The default architecture to use when invoking architecture-specific code" noattribute:"true"`
-	ContainerdAddr string `yaml:"containerd_addr,omitempty" env:"KRAFTKIT_CONTAINERD_ADDR" long:"containerd-addr" usage:"Address of containerd daemon socket" default:""`
-	EventsPidFile  string `yaml:"events_pidfile" env:"KRAFTKIT_EVENTS_PIDFILE" long:"events-pid-file" usage:"Events process ID used when running multiple unikernels"`
-	BuildKitHost   string `yaml:"buildkit_host" env:"KRAFTKIT_BUILDKIT_HOST" long:"buildkit-host" usage:"Path to the buildkit host" default:""`
+	NoPrompt                  bool   `yaml:"no_prompt" env:"KRAFTKIT_NO_PROMPT" long:"no-prompt" usage:"Do not prompt for user interaction" default:"false"`
+	NoParallel                bool   `yaml:"no_parallel" env:"KRAFTKIT_NO_PARALLEL" long:"no-parallel" usage:"Do not run internal tasks in parallel" default:"false"`
+	NoEmojis                  bool   `yaml:"no_emojis" env:"KRAFTKIT_NO_EMOJIS" long:"no-emojis" usage:"Do not use emojis in any console output" default:"true"`
+	NoCheckUpdates            bool   `yaml:"no_check_updates" env:"KRAFTKIT_NO_CHECK_UPDATES" long:"no-check-updates" usage:"Do not check for updates" default:"false"`
+	NoColor                   bool   `yaml:"no_color" env:"KRAFTKIT_NO_COLOR" long:"no-color" usage:"Disable color output"`
+	NoWarnSudo                bool   `yaml:"no_warn_sudo" env:"KRAFTKIT_NO_WARN_SUDO" long:"no-warn-sudo" usage:"Do not warn on running via sudo" default:"false"`
+	Editor                    string `yaml:"editor" env:"KRAFTKIT_EDITOR" long:"editor" usage:"Set the text editor to open when prompt to edit a file"`
+	GitProtocol               string `yaml:"git_protocol" env:"KRAFTKIT_GIT_PROTOCOL" long:"git-protocol" usage:"Preferred Git protocol to use" default:"https"`
+	Pager                     string `yaml:"pager,omitempty" env:"KRAFTKIT_PAGER" long:"pager" usage:"System pager to pipe output to" default:"cat"`
+	Qemu                      string `yaml:"qemu,omitempty" env:"KRAFTKIT_QEMU" long:"qemu" usage:"Path to QEMU executable" default:""`
+	HTTPUnixSocket            string `yaml:"http_unix_socket,omitempty" env:"KRAFTKIT_HTTP_UNIX_SOCKET" long:"http-unix-sock" usage:"When making HTTP(S) connections, pipe requests via this shared socket"`
+	RuntimeDir                string `yaml:"runtime_dir" env:"KRAFTKIT_RUNTIME_DIR" long:"runtime-dir" usage:"Directory for placing runtime files (e.g. pidfiles)"`
+	DefaultPlat               string `yaml:"default_plat" env:"KRAFTKIT_DEFAULT_PLAT" usage:"The default platform to use when invoking platform-specific code" noattribute:"true"`
+	DefaultArch               string `yaml:"default_arch" env:"KRAFTKIT_DEFAULT_ARCH" usage:"The default architecture to use when invoking architecture-specific code" noattribute:"true"`
+	ContainerdAddr            string `yaml:"containerd_addr,omitempty" env:"KRAFTKIT_CONTAINERD_ADDR" long:"containerd-addr" usage:"Address of containerd daemon socket" default:""`
+	EventsPidFile             string `yaml:"events_pidfile" env:"KRAFTKIT_EVENTS_PIDFILE" long:"events-pid-file" usage:"Events process ID used when running multiple unikernels"`
+	BuildKitHost              string `yaml:"buildkit_host" env:"KRAFTKIT_BUILDKIT_HOST" long:"buildkit-host" usage:"Path to the buildkit host" default:""`
+	CollectAnonymousTelemetry bool   `yaml:"collect_anonymous_telemetry" env:"KRAFTKIT_COLLECT_ANONYMOUS_TELEMETRY" long:"collect-anonymous-telemetry" usage:"Collect anonymous telemetry" default:"false"`
 
 	Paths struct {
 		Plugins   string `yaml:"plugins,omitempty" env:"KRAFTKIT_PATHS_PLUGINS" long:"plugins-dir" usage:"Path to KraftKit plugin directory"`

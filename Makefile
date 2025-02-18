@@ -183,6 +183,7 @@ $(addprefix $(.PROXY), $(BIN)): TAGS += containers_image_openpgp
 $(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.version=$(VERSION)"
 $(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.commit=$(GIT_SHA)"
 $(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.buildTime=$(shell date)"
+$(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS += -X "$(GOMOD)/internal/cli/kraft.sentryDsn=$(SENTRY_DSN)"
 ifeq ($(STATIC),y)
 $(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS += -extldflags "-static $(XEN_LDFLAGS)"
 else

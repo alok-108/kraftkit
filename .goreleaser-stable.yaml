@@ -232,6 +232,7 @@ builds:
       #@ else:
       - -extldflags "-static"
       #@ end
+      - -X {{ .Env.GOMOD }}/internal/cli/kraft.sentryDsn={{ .Env.SENTRY_DSN }}
     tags:
       - containers_image_storage_stub
       - containers_image_openpgp

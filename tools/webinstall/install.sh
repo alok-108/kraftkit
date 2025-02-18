@@ -27,7 +27,7 @@ INSTALL_CPUTYPE=${INSTALL_CPUTYPE:-}
 INSTALL_SERVER=${INSTALL_SERVER:-https://get.kraftkit.sh}
 INSTALL_TLS=${INSTALL_TLS:-y}
 DEBUG=${DEBUG:-n}
-NEED_TTY=${NEED_TTY:-y}
+HAS_TTY=${HAS_TTY:-y}
 ASK_SUDO=${ASK_SUDO:-y}
 
 # Commands as variables to make them easier to override
@@ -208,7 +208,7 @@ get_user_response() {
     printf "[?] %s" "$_gur_question"
 
     # Check if we have a tty and read from it if we do
-    if [ "$NEED_TTY" = "y" ]; then
+    if [ "$HAS_TTY" = "y" ]; then
         read -r _gur_read_answer < /dev/tty
     fi
 
@@ -268,7 +268,7 @@ do_cmd() {
             # Check if we have a tty and run with it if we do,
             # otherwise exit with an error
             # This is because sudo requires a tty to input the password
-            if [ "$NEED_TTY" = "y" ]; then
+            if [ "$HAS_TTY" = "y" ]; then
                 # shellcheck disable=SC2002
                 $SUDO sh -c "$@" < /dev/tty
                 ASK_SUDO="n"
@@ -1637,7 +1637,7 @@ install_completions() {
 # arg_parse parses the arguments passed to the script.
 # $@: the arguments to parse
 # Returns:
-# NEED_TTY: whether /dev/tty is needed
+# HAS_TTY: whether /dev/tty is needed
 # Code: 0 on success, 1 on error
 arg_parse() {
     for _agp_arg in "$@"; do
@@ -1668,7 +1668,7 @@ arg_parse() {
                         y)
                             # user wants to skip the prompt --
                             # we don't need /dev/tty
-                            NEED_TTY=n
+                            HAS_TTY=n
                             ;;
                         d)
                             # user wants debugging output
@@ -1698,6 +1698,24 @@ check_autoinstall() {
     _RETVAL="$_cai_auto_install"
 }
 
+# collect_telemetry queries the user as to whether to enable anonymous telemetry
+# and then updates KraftKit's configuration accordingly.
+# Returns:
+# _RETVAL: whether to enable telemetry: y or empty
+collect_telemetry() {
+    _et_telemetry=""
+
+    if prompt_yes_no "Help us make KraftKit better and opt-in to collecting anonymous telemetry? [y/N]: " "n"; then
+        _et_telemetry="y"
+        kraft system set collect_anonymous_telemetry=true
+    else
+        _et_telemetry="n"
+        kraft system set collect_anonymous_telemetry=false
+    fi
+
+    _RETVAL="$_et_telemetry"
+}
+
 # main is the entrypoint of the script.
 # The steps are:
 # 1. Check if we have all the commands we need
@@ -1716,9 +1734,9 @@ main() {
     need_cmd "$RM"
 
     # Check if we have to use /dev/tty to prompt the user
-    NEED_TTY=y
+    HAS_TTY=y
     arg_parse "$@"
-    say_debug "Parsed arguments: NEED_TTY: $NEED_TTY"
+    say_debug "Parsed arguments: HAS_TTY: $HAS_TTY"
 
     # Detect the architecture and OS of the current machine
     get_architecture || return 1
@@ -1734,18 +1752,19 @@ main() {
     # Install kraftkit for the given architecture and its dependencies
     install_kraftkit "$_main_arch" "$_main_auto_install"
 
-    # Check if kraft is installed and working
-    kraft -h
-    _main_kraft_ret="$?"
-
     # Install kraftkit completions
-    if [ "$NEED_TTY" = "y" ]; then
+    if [ "$HAS_TTY" = "y" ]; then
         install_completions "$_main_arch"
+        collect_telemetry
     fi
 
-    say_ok 'Happy Krafting!'
+    say ''
+    say_ok 'Happy krafting!'
+    say ''
+    say 'Type kraft -h for help'
+    say ''
 
-    return $_main_kraft_ret
+    return 0
 }
 
 
