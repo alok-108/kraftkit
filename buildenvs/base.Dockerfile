@@ -41,8 +41,8 @@ RUN set -xe; \
       libarchive-tools \
       libbtrfs-dev \
       libgpgme-dev \
-      libncursesw5 \
-      libncursesw5-dev \
+      ncurses-dev \
+      libncurses-dev \
       make \
       openssh-client \
       patch \
