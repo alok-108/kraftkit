@@ -44,7 +44,7 @@ xen:
 		$(DOCKER_BUILD_EXTRA) $(WORKDIR)
 
 .PHONY: qemu
-qemu: QEMU_VERSION ?= 8.2.4
+qemu: QEMU_VERSION ?= 9.2.1
 qemu: MAKE_NPROC   ?= 2
 qemu: ENVIRONMENT  ?= qemu
 qemu: IMAGE        ?= $(REGISTRY)/qemu:$(QEMU_VERSION)
@@ -94,7 +94,7 @@ base: ENVIRONMENT      ?= base
 base: GO_VERSION       ?= 1.24.0
 base: IMAGE            ?= $(REGISTRY)/base:$(IMAGE_TAG)
 base: KRAFTKIT_VERSION ?= latest
-base: QEMU_VERSION     ?= 8.2.4
+base: QEMU_VERSION     ?= 9.2.1
 base: XEN_VERSION      ?= 4.19
 ifeq ($(WITH_CACHE),y)
 base: _WITH_CACHE      := --cache-from $(IMAGE)
@@ -119,7 +119,7 @@ base-golang: ENVIRONMENT      ?= base-golang
 base-golang: GO_VERSION       ?= 1.24.0
 base-golang: IMAGE            ?= $(REGISTRY)/base-golang:$(IMAGE_TAG)
 base-golang: KRAFTKIT_VERSION ?= latest
-base-golang: QEMU_VERSION     ?= 8.2.4
+base-golang: QEMU_VERSION     ?= 9.2.1
 base-golang: XEN_VERSION      ?= 4.19
 ifeq ($(WITH_CACHE),y)
 base-golang: _WITH_CACHE      := --cache-from $(IMAGE)

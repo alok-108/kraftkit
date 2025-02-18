@@ -4,7 +4,7 @@
 # You may not use this file except in compliance with the License.
 ARG DEBIAN_VERSION=trixie-20250203
 ARG KRAFTKIT_VERSION=latest
-ARG QEMU_VERSION=8.2.4
+ARG QEMU_VERSION=9.2.1
 ARG REGISTRY=kraftkit.sh
 ARG XEN_VERSION=4.19
 
