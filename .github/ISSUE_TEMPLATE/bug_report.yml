@@ -47,6 +47,14 @@ body:
       placeholder: For example, I expected the unikernel to boot and print "Hello, world!"
     validations:
       required: false
+  - type: textarea
+    id: kraftkit-version
+    attributes:
+      label: KraftKit version
+      description: Provide the version of KraftKit you are using, e.g. by running `kraft version`
+      placeholder: E.g. v0.11.1
+    validations:
+      required: false
   - type: dropdown
     id: architectures
     attributes:
