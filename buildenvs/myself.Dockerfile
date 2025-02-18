@@ -3,12 +3,12 @@
 # Licensed under the BSD-3-Clause License (the "License").
 # You may not use this file except in compliance with the License.
 
-ARG GO_VERSION=1.24.0
+ARG DEBIAN_VERSION=trixie-20250203
 ARG XEN_VERSION=4.19
 ARG REGISTRY=kraftkit.sh
 
 FROM ${REGISTRY}/xen:${XEN_VERSION} AS xen
-FROM golang:${GO_VERSION}-bookworm  AS kraftkit-full
+FROM debian:${DEBIAN_VERSION}       AS kraftkit-full
 
 # Install build dependencies
 RUN set -xe; \
@@ -30,9 +30,16 @@ RUN set -xe; \
       make \
       pkg-config \
     ; \
-    apt-get clean; \
-    go install mvdan.cc/gofumpt@v0.7.0; \
-    git config --global --add safe.directory /go/src/kraftkit.sh;
+    apt-get clean;
+
+ARG GO_VERSION=1.24.0
+
+# Install Go
+RUN set -xe; \
+    curl -Lo /tmp/go.tar.gz https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz; \
+    rm -rf /usr/local/go && tar -C /usr/local -xzf /tmp/go.tar.gz
+
+ENV PATH="${PATH}:/usr/local/go/bin"
 
 # Install YTT and Cosign
 RUN set -xe; \
@@ -75,6 +82,7 @@ COPY . .
 
 # Build the binary
 RUN set -xe; \
+    git config --global --add safe.directory /go/src/kraftkit.sh; \
     make kraft; \
     kraft -h;
 
