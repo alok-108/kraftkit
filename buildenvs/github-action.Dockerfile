@@ -8,7 +8,7 @@ ARG KRAFTKIT_VERSION=latest
 ARG QEMU_VERSION=8.2.4
 ARG REGISTRY=kraftkit.sh
 
-FROM golang:${GO_VERSION}-bullseye AS build
+FROM golang:${GO_VERSION}-bookworm AS build
 
 COPY . /go/src/kraftkit.sh
 
