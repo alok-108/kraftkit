@@ -26,7 +26,7 @@ jobs:
 
       - name: Generate GoReleaser configuration
         run: |
-          ytt --data-values-env SENTRY_DSN -f .goreleaser-staging.yaml > goreleaser-staging.yaml
+          ytt -f .goreleaser-staging.yaml > goreleaser-staging.yaml
 
       - name: Run GoReleaser
         run: |
@@ -44,6 +44,7 @@ jobs:
             --skip=validate
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
       - name: Get staging version
         id: current-version
