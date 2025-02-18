@@ -123,6 +123,7 @@ jobs:
         env:
           KRAFTKIT_NO_WARN_SUDO: true
           KRAFTKIT_NO_CHECK_UPDATES: true
+          DOCKER: ''
         run: make test-framework DISTDIR="$(go env GOPATH)"/bin
 
       - name: Run e2e tests
