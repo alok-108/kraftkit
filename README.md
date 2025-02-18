@@ -148,7 +148,7 @@ For other CI's and integrations, including GitLab, check out [the getting starte
 | Hypervisor  | Supported Version    |
 |-------------|----------------------|
 | Xen         | <= 4.19              |
-| QEMU        | <= 8.2.4 && >= 4.2.0 |
+| QEMU        | <= 9.2.1 && >= 4.2.0 |
 | Firecracker | >= 1.4.1             |
 
 |                 | QEMU | Firecracker | Xen | [containerd](/oci/README.md#supported-backends) |

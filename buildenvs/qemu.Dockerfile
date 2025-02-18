@@ -3,11 +3,11 @@
 # Licensed under the BSD-3-Clause License (the "License").
 # You may not use this file except in compliance with the License.
 
-ARG DEBIAN_VERSION=bookworm-20241223
+ARG DEBIAN_VERSION=trixie-20250203
 
 FROM debian:${DEBIAN_VERSION} AS qemu-build
 
-ARG QEMU_VERSION=8.2.4
+ARG QEMU_VERSION=9.2.1
 ARG WITH_XEN=disable
 ARG WITH_KVM=enable
 
@@ -40,6 +40,7 @@ RUN set -ex; \
         pkg-config \
         python3 \
         python3-pip \
+        python3-venv \
         texinfo \
         vde2 \
         xz-utils \
@@ -55,6 +56,7 @@ RUN set -ex; \
 # Configure and build QEMU
 RUN set -ex; \
     cd qemu-${QEMU_VERSION}; \
+    python3 -m venv .; \
     tlist=""; \
     if [ "${WITH_x86_64}" = "enable" ]; then \
         tlist=",x86_64-softmmu"; \
@@ -123,7 +125,6 @@ RUN set -ex; \
         --disable-linux-aio \
         --disable-linux-io-uring \
         --enable-linux-user \
-        --disable-live-block-migration \
         --disable-lzfse \
         --enable-lzo \
         --disable-malloc-trim \
@@ -143,7 +144,6 @@ RUN set -ex; \
         --disable-pixman \
         --enable-pie \
         --disable-png \
-        --disable-pvrdma \
         --disable-qcow1 \
         --disable-qed \
         --disable-qga-vss \

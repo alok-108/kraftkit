@@ -3,12 +3,12 @@
 # Licensed under the BSD-3-Clause License (the "License").
 # You may not use this file except in compliance with the License.
 ARG GO_VERSION=1.24.0
-ARG DEBIAN_VERSION=bookworm-20241223
+ARG DEBIAN_VERSION=trixie-20250203
 ARG KRAFTKIT_VERSION=latest
-ARG QEMU_VERSION=8.2.4
+ARG QEMU_VERSION=9.2.1
 ARG REGISTRY=kraftkit.sh
 
-FROM golang:${GO_VERSION}-bullseye AS build
+FROM golang:${GO_VERSION}-bookworm AS build
 
 COPY . /go/src/kraftkit.sh
 
@@ -52,8 +52,8 @@ RUN set -xe; \
       gcc-12-arm-linux-gnueabihf \
       git \
       jq \
-      libncursesw5 \
-      libncursesw5-dev \
+      ncurses-dev \
+      libncurses-dev \
       make \
       openssh-client \
       patch \

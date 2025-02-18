@@ -24,7 +24,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - QEMU_VERSION: 8.2.4
+          - QEMU_VERSION: 9.2.1
 
     steps:
       - name: Get changed files
