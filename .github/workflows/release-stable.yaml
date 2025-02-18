@@ -36,7 +36,7 @@ jobs:
 
       - name: Generate GoReleaser configuration
         run: |
-          ytt -f .goreleaser-stable.yaml > goreleaser-stable.yaml
+          ytt --data-values-env SENTRY_DSN -f .goreleaser-stable.yaml > goreleaser-stable.yaml
 
       - name: Write cosign key and pubkey to file
         run: |
