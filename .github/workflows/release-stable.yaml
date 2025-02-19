@@ -29,7 +29,8 @@ jobs:
           echo "deb [trusted=yes] https://apt.fury.io/cli/ * *" > /etc/apt/sources.list.d/fury-cli.list
           apt-get update
           apt-get install -y --no-install-recommends \
-            fury-cli
+            fury-cli \
+            nix-bin
           curl -O -L "https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64"
           mv cosign-linux-amd64 /usr/local/bin/cosign
           chmod +x /usr/local/bin/cosign
