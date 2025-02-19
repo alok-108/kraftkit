@@ -1,8 +1,8 @@
 name: buildenvs
 
 on:
-  release:
-    types: [released]
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
   pull_request:
     types: [opened, synchronize, reopened]
     branches: [staging]
