@@ -68,7 +68,7 @@ var _ = Describe("kraft cloud img ls", func() {
 
 		cmd = fcmd.NewKraft(stdout, stderr, cfg.Path())
 		cmd.Env = os.Environ()
-		cmd.Args = append(cmd.Args, "cloud", "img", "ls", "--log-level", "info", "--log-type", "json", "-o", "json")
+		cmd.Args = append(cmd.Args, "cloud", "img", "ls", "--log-level", "info", "--log-type", "json", "--output", "json")
 	})
 
 	When("invoked with the --help flag", func() {

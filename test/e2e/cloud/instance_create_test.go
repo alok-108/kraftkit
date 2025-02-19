@@ -103,7 +103,7 @@ var _ = Describe("kraft cloud instance create", func() {
 
 		cmd = fcmd.NewKraft(stdout, stderr, cfg.Path())
 		cmd.Env = os.Environ()
-		cmd.Args = append(cmd.Args, "cloud", "instance", "create", "--log-level", "info", "--log-type", "json", "-o", "json")
+		cmd.Args = append(cmd.Args, "cloud", "instance", "create", "--log-level", "info", "--log-type", "json", "--output", "json")
 	})
 
 	// General tests
@@ -858,7 +858,7 @@ var _ = Describe("kraft cloud instance create", func() {
 					"cloud", "instance", "create",
 					"--log-level", "info",
 					"--log-type", "json",
-					"-o", "json",
+					"--output", "json",
 				)
 
 				cmd.Args = append(cmd.Args,
@@ -969,7 +969,7 @@ var _ = Describe("kraft cloud instance create", func() {
 				"--memory", instanceMemory,
 				"--name", instanceNameFull,
 				"--start",
-				"-o", "json",
+				"--output", "json",
 				imageName,
 			)
 		})
@@ -1056,7 +1056,7 @@ var _ = Describe("kraft cloud instance create", func() {
 				"cloud", "service", "get",
 				"--log-level", "info",
 				"--log-type", "json",
-				"-o", "json",
+				"--output", "json",
 				service,
 			)
 
@@ -1411,7 +1411,7 @@ var _ = Describe("kraft cloud instance create", func() {
 				"cloud", "instance", "ls",
 				"--log-level", "info",
 				"--log-type", "json",
-				"-o", "json",
+				"--output", "json",
 			)
 
 			err = lsCmd.Run()
@@ -1536,7 +1536,7 @@ var _ = Describe("kraft cloud instance create", func() {
 				lsCmd.Args, "cloud", "instance", "ls",
 				"--log-level", "info",
 				"--log-type", "json",
-				"-o", "json",
+				"--output", "json",
 			)
 
 			err = lsCmd.Run()
@@ -1731,7 +1731,7 @@ var _ = Describe("kraft cloud instance create", func() {
 				"cloud", "certificate", "ls",
 				"--log-level", "info",
 				"--log-type", "json",
-				"-o", "json",
+				"--output", "json",
 			)
 
 			err = certCmd.Run()
@@ -2300,7 +2300,7 @@ var _ = Describe("kraft cloud instance create", func() {
 				createServiceCmd.Args, "cloud", "service", "create",
 				"--log-level", "info",
 				"--log-type", "json",
-				"-o", "json",
+				"--output", "json",
 				"--name", "smth-"+instanceNameFull,
 				"443:8080/tls+http",
 			)
