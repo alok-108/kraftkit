@@ -241,6 +241,8 @@ builds:
     tags:
       - containers_image_storage_stub
       - containers_image_openpgp
+      - netgo
+      - osusergo
       #@ if bin == "kraft" and os == "linux" and arch == "amd64":
       - xen
       #@ end
