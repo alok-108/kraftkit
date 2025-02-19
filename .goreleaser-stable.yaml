@@ -130,6 +130,9 @@ nix:
 #@ for arch in binaries["kraft"]["linux"]:
       - #@ "archive-kraft-linux-{}".format(arch)
 #@ end
+#@ for arch in binaries["kraft"]["darwin"]:
+      - #@ "archive-kraft-darwin-{}".format(arch)
+#@ end
     repository:
       owner: unikraft
       name: nur
