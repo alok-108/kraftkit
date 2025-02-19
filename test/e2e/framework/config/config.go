@@ -56,7 +56,6 @@ func NewTempConfig() *Config {
 	err = configDoc.PipeE(
 		yaml.SetField("paths", yaml.NewMapRNode(nil)),
 		yaml.Tee(yaml.SetField("manifests", yaml.NewStringRNode(filepath.Join(tmpDir, "manifests")))),
-		yaml.Tee(yaml.SetField("plugins", yaml.NewStringRNode(filepath.Join(tmpDir, "plugins")))),
 		yaml.SetField("sources", yaml.NewStringRNode(filepath.Join(tmpDir, "sources"))),
 	)
 	if err != nil {

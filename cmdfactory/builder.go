@@ -84,7 +84,6 @@ func Name(obj any) string {
 }
 
 func expandRegisteredFlags(cmd *cobra.Command) {
-	// Add flag overrides which can be provided by plugins
 	for arg, flags := range flagOverrides {
 		args := strings.Fields(arg)
 		subCmd, _, err := cmd.Traverse(args[1:])
