@@ -23,7 +23,6 @@ var _ = Describe("Config", func() {
 
 			  paths:
 			    manifests: /tmp/kraftkit-e2e-abc123xyz890/manifests
-			    plugins: /tmp/kraftkit-e2e-abc123xyz890/plugins
 			    sources: /tmp/kraftkit-e2e-abc123xyz890/sources
 		*/
 		cfg = fcfg.NewTempConfig()
@@ -43,10 +42,9 @@ var _ = Describe("Config", func() {
 			Expect(paths).ToNot(BeNil())
 			fields, err = paths.Value.Fields()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(fields).To(HaveLen(3))
+			Expect(fields).To(HaveLen(2))
 			Expect(fields[0]).To(Equal("manifests"))
-			Expect(fields[1]).To(Equal("plugins"))
-			Expect(fields[2]).To(Equal("sources"))
+			Expect(fields[1]).To(Equal("sources"))
 		})
 
 		Specify("its attributes and values can be read", func() {
@@ -64,7 +62,6 @@ var _ = Describe("Config", func() {
 
 				  paths:
 				    manifests: /tmp/kraftkit-e2e-abc123xyz890/manifests
-				    plugins: /tmp/kraftkit-e2e-abc123xyz890/plugins
 				    sources: /tmp/kraftkit-e2e-abc123xyz890/sources
 				    nested: 42
 				  non_nested: 42

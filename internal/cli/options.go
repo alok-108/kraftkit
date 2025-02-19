@@ -18,7 +18,6 @@ import (
 	"kraftkit.sh/iostreams"
 	"kraftkit.sh/log"
 	"kraftkit.sh/packmanager"
-	"kraftkit.sh/plugins"
 
 	"kraftkit.sh/internal/httpclient"
 )
@@ -28,7 +27,6 @@ type CliOptions struct {
 	Logger         *logrus.Logger
 	ConfigManager  *config.ConfigManager[config.KraftKit]
 	PackageManager packmanager.PackageManager
-	PluginManager  *plugins.PluginManager
 	HTTPClient     *http.Client
 }
 
@@ -244,24 +242,6 @@ func WithDefaultHTTPClient() CliOption {
 		}
 
 		copts.HTTPClient = httpClient
-
-		return nil
-	}
-}
-
-// WithDefaultPluginManager returns an initialized plugin manager using the
-// host-provided configuration plugin path.
-func WithDefaultPluginManager() CliOption {
-	return func(copts *CliOptions) error {
-		if copts.PluginManager != nil {
-			return nil
-		}
-
-		if copts.ConfigManager == nil {
-			return fmt.Errorf("cannot access config manager")
-		}
-
-		copts.PluginManager = plugins.NewPluginManager(copts.ConfigManager.Config.Paths.Plugins, nil)
 
 		return nil
 	}

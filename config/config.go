@@ -35,7 +35,6 @@ type KraftKit struct {
 	CollectAnonymousTelemetry bool   `yaml:"collect_anonymous_telemetry" env:"KRAFTKIT_COLLECT_ANONYMOUS_TELEMETRY" long:"collect-anonymous-telemetry" usage:"Collect anonymous telemetry" default:"false"`
 
 	Paths struct {
-		Plugins   string `yaml:"plugins,omitempty" env:"KRAFTKIT_PATHS_PLUGINS" long:"plugins-dir" usage:"Path to KraftKit plugin directory"`
 		Config    string `yaml:"-" env:"KRAFTKIT_PATHS_CONFIG" long:"config-dir" usage:"Path to KraftKit config directory"`
 		Manifests string `yaml:"manifests,omitempty" env:"KRAFTKIT_PATHS_MANIFESTS" long:"manifests-dir" usage:"Path to Unikraft manifest cache"`
 		Sources   string `yaml:"sources,omitempty" env:"KRAFTKIT_PATHS_SOURCES" long:"sources-dir" usage:"Path to Unikraft component cache"`

@@ -174,7 +174,6 @@ func Main(args []string) int {
 	for _, o := range []cli.CliOption{
 		cli.WithDefaultConfigManager(cmd),
 		cli.WithDefaultIOStreams(),
-		cli.WithDefaultPluginManager(),
 		cli.WithDefaultLogger(),
 		cli.WithDefaultHTTPClient(),
 	} {

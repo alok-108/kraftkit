@@ -34,11 +34,6 @@ func NewDefaultKraftKitConfig() (*KraftKit, error) {
 		return nil, fmt.Errorf("could not get default auths: %s", err)
 	}
 
-	// Add default path for plugins..
-	if len(c.Paths.Plugins) == 0 {
-		c.Paths.Plugins = filepath.Join(DataDir(), "plugins")
-	}
-
 	// ..for configuration files..
 	if len(c.Paths.Config) == 0 {
 		c.Paths.Config = filepath.Join(ConfigDir())
