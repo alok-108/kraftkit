@@ -130,6 +130,9 @@ nix:
 #@ for arch in binaries["kraft"]["linux"]:
       - #@ "archive-kraft-linux-{}".format(arch)
 #@ end
+#@ for arch in binaries["kraft"]["darwin"]:
+      - #@ "archive-kraft-darwin-{}".format(arch)
+#@ end
     repository:
       owner: unikraft
       name: nur
@@ -139,10 +142,9 @@ nix:
     license: bsd3
     install: |-
       mkdir -p $out/bin
-      cp -vr "${srcdir}/dist/kraft" "${out}/bin/kraft"
-      cp -vr "${srcdir}/dist/kraftld" "${out}/bin/kraftld"
-    extra_install: |-
-      installManPage ${srcdir}/man/*
+      cp -vr "kraft" "$out/bin/kraft"
+      cp -vr "kraftld" "$out/bin/kraftld"
+      installManPage man/*
 
 brews:
   - name: kraftkit
