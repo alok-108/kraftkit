@@ -327,6 +327,13 @@ jobs:
           name: qemu-oci-image
           path: /tmp
 
+      - name: Download artifacts
+        if: ${{ steps.check-run.outputs.run == 'true' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: xen-oci-image
+          path: /tmp
+
       - name: Load Docker image
         if: ${{ steps.check-run.outputs.run == 'true' }}
         run: |
