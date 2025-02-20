@@ -174,6 +174,7 @@ jobs:
 
   myself:
     runs-on: ubuntu-latest
+    needs: [xen, qemu]
     steps:
       - name: Get changed files
         if: ${{ github.event_name == 'pull_request' }}
@@ -227,6 +228,25 @@ jobs:
           registry: index.unikraft.io
           username: ${{ secrets.REG_USERNAME }}
           password: ${{ secrets.REG_TOKEN }}
+
+      - name: Download 'kraftkit.sh/qemu' artifacts
+        if: ${{ steps.check-run.outputs.run == 'true' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: qemu-oci-image
+          path: /tmp
+
+      - name: Download 'kraftkit.sh/xen' artifacts
+        if: ${{ steps.check-run.outputs.run == 'true' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: xen-oci-image
+          path: /tmp
+
+      - name: Load Docker image
+        if: ${{ steps.check-run.outputs.run == 'true' }}
+        run: |
+          for I in /tmp/*.tar; do docker load --input "${I}"; done
 
       - name: Build OCI image
         if: ${{ steps.check-run.outputs.run == 'true' }}
