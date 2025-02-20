@@ -313,21 +313,21 @@ jobs:
           username: ${{ secrets.REG_USERNAME }}
           password: ${{ secrets.REG_TOKEN }}
 
-      - name: Download artifacts
+      - name: Download 'kraftkit.sh/myself' artifacts
         if: ${{ steps.check-run.outputs.run == 'true' }}
         uses: actions/download-artifact@v4
         with:
           name: myself-oci-image
           path: /tmp
 
-      - name: Download artifacts
+      - name: Download 'kraftkit.sh/qemu' artifacts
         if: ${{ steps.check-run.outputs.run == 'true' }}
         uses: actions/download-artifact@v4
         with:
           name: qemu-oci-image
           path: /tmp
 
-      - name: Download artifacts
+      - name: Download 'kraftkit.sh/xen' artifacts
         if: ${{ steps.check-run.outputs.run == 'true' }}
         uses: actions/download-artifact@v4
         with:
@@ -411,21 +411,21 @@ jobs:
           username: ${{ secrets.REG_USERNAME }}
           password: ${{ secrets.REG_TOKEN }}
 
-      - name: Download artifacts
+      - name: Download 'kraftkit.sh/myself' artifacts
         if: ${{ steps.check-run.outputs.run == 'true' }}
         uses: actions/download-artifact@v4
         with:
           name: myself-oci-image
           path: /tmp
 
-      - name: Download artifacts
+      - name: Download 'kraftkit.sh/qemu' artifacts
         if: ${{ steps.check-run.outputs.run == 'true' }}
         uses: actions/download-artifact@v4
         with:
           name: qemu-oci-image
           path: /tmp
 
-      - name: Download artifacts
+      - name: Download 'kraftkit.sh/xen' artifacts
         if: ${{ steps.check-run.outputs.run == 'true' }}
         uses: actions/download-artifact@v4
         with:
@@ -519,15 +519,14 @@ jobs:
         with:
           driver: docker
 
-
-      - name: Download artifacts
+      - name: Download 'kraftkit.sh/myself' artifacts
         if: ${{ steps.check-run.outputs.run == 'true' }}
         uses: actions/download-artifact@v4
         with:
           name: myself-oci-image
           path: /tmp
 
-      - name: Download artifacts
+      - name: Download 'kraftkit.sh/qemu' artifacts
         if: ${{ steps.check-run.outputs.run == 'true' }}
         uses: actions/download-artifact@v4
         with:
