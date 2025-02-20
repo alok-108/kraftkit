@@ -242,6 +242,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           outputs: type=docker,dest=/tmp/myself.tar
+          context: .
         env:
           IMAGE_TAG: blahblahblah
 
@@ -549,6 +550,7 @@ jobs:
           file: ./buildenvs/github-action.Dockerfile
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          context: .
         env:
           KRAFTKIT_VERSION: blahblahblah
 
