@@ -207,6 +207,11 @@ jobs:
       - uses: actions/checkout@v4
         if: ${{ steps.check-run.outputs.run == 'true' && github.event_name != 'push' }}
 
+      - name: Fetch all tags
+        run: |
+          git config --global --add safe.directory /__w/kraftkit/kraftkit
+          git fetch --force --tags
+
       - name: Set up QEMU
         if: ${{ steps.check-run.outputs.run == 'true' }}
         uses: docker/setup-qemu-action@v3
@@ -237,6 +242,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           outputs: type=docker,dest=/tmp/myself.tar
+          context: .
         env:
           IMAGE_TAG: blahblahblah
 
@@ -491,6 +497,11 @@ jobs:
       - uses: actions/checkout@v4
         if: ${{ steps.check-run.outputs.run == 'true' && github.event_name != 'push' }}
 
+      - name: Fetch all tags
+        run: |
+          git config --global --add safe.directory /__w/kraftkit/kraftkit
+          git fetch --force --tags
+
       - name: Set up QEMU
         if: ${{ steps.check-run.outputs.run == 'true' }}
         uses: docker/setup-qemu-action@v3
@@ -539,6 +550,7 @@ jobs:
           file: ./buildenvs/github-action.Dockerfile
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          context: .
         env:
           KRAFTKIT_VERSION: blahblahblah
 
