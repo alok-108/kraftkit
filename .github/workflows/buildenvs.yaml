@@ -207,6 +207,11 @@ jobs:
       - uses: actions/checkout@v4
         if: ${{ steps.check-run.outputs.run == 'true' && github.event_name != 'push' }}
 
+      - name: Fetch all tags
+        run: |
+          git config --global --add safe.directory /__w/kraftkit/kraftkit
+          git fetch --force --tags
+
       - name: Set up QEMU
         if: ${{ steps.check-run.outputs.run == 'true' }}
         uses: docker/setup-qemu-action@v3
@@ -490,6 +495,11 @@ jobs:
 
       - uses: actions/checkout@v4
         if: ${{ steps.check-run.outputs.run == 'true' && github.event_name != 'push' }}
+
+      - name: Fetch all tags
+        run: |
+          git config --global --add safe.directory /__w/kraftkit/kraftkit
+          git fetch --force --tags
 
       - name: Set up QEMU
         if: ${{ steps.check-run.outputs.run == 'true' }}
