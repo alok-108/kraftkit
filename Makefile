@@ -36,7 +36,7 @@ endif
 ifeq ($(HASH),)
 HASH_COMMIT ?= HEAD
 HASH        ?= $(shell git update-index -q --refresh && \
-                       git describe --tags)
+                       git describe --tags --always)
 # Others can't be dirty by definition
 ifneq ($(HASH_COMMIT),HEAD)
 HASH_COMMIT ?= HEAD
