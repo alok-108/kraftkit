@@ -54,7 +54,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/moby/buildkit v0.19.0
 	github.com/muesli/reflow v0.3.0
-	github.com/muesli/termenv v0.15.3-0.20240618155329-98d742f6907a
+	github.com/muesli/termenv v0.16.0
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
 	github.com/opencontainers/go-digest v1.0.0
