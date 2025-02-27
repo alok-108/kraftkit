@@ -15,6 +15,7 @@ import (
 	"kraftkit.sh/internal/cli/kraft/cloud/service/create"
 	"kraftkit.sh/internal/cli/kraft/cloud/service/get"
 	"kraftkit.sh/internal/cli/kraft/cloud/service/list"
+	"kraftkit.sh/internal/cli/kraft/cloud/service/logs"
 	"kraftkit.sh/internal/cli/kraft/cloud/service/remove"
 
 	"kraftkit.sh/cmdfactory"
@@ -44,6 +45,7 @@ func NewCmd() *cobra.Command {
 	cmd.AddCommand(create.NewCmd())
 	cmd.AddCommand(list.NewCmd())
 	cmd.AddCommand(get.NewCmd())
+	cmd.AddCommand(logs.NewCmd())
 	cmd.AddCommand(remove.NewCmd())
 
 	return cmd
