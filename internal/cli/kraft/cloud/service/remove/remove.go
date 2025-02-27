@@ -26,6 +26,7 @@ type RemoveOptions struct {
 	All       bool                  `long:"all" short:"a" usage:"Remove all services"`
 	Auth      *config.AuthConfig    `noattribute:"true"`
 	Client    kraftcloud.KraftCloud `noattribute:"true"`
+	Drain     bool                  `long:"drain" short:"D" usage:"Remove all instances within the service"`
 	Metro     string                `noattribute:"true"`
 	Token     string                `noattribute:"true"`
 	WaitEmpty bool                  `long:"wait-empty" usage:"Wait for the service to be empty before removing it"`
@@ -69,6 +70,10 @@ func (opts *RemoveOptions) Pre(cmd *cobra.Command, args []string) error {
 	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token)
 	if err != nil {
 		return fmt.Errorf("could not populate metro and token: %w", err)
+	}
+
+	if opts.Drain && opts.WaitEmpty {
+		return fmt.Errorf("draining and waiting for the service to be empty are mutually exclusive")
 	}
 
 	return nil
@@ -125,9 +130,45 @@ func Remove(ctx context.Context, opts *RemoveOptions, args ...string) error {
 		}
 	}
 
-	if opts.WaitEmpty {
-		var processes []*processtree.ProcessTreeItem
+	var processes []*processtree.ProcessTreeItem
 
+	if opts.Drain {
+		for _, service := range args {
+			processes = append(processes,
+				processtree.NewProcessTreeItem(
+					fmt.Sprintf("draining %s", service),
+					"",
+					func(ctx context.Context) error {
+						serviceResp, err := opts.Client.Services().WithMetro(opts.Metro).Get(ctx, service)
+						if err != nil {
+							return fmt.Errorf("could not get service: %w", err)
+						}
+
+						sg, err := serviceResp.FirstOrErr()
+						if err != nil && *sg.Error == kcclient.APIHTTPErrorNotFound {
+							return nil
+						} else if err != nil {
+							return err
+						}
+
+						if len(sg.Instances) == 0 {
+							return nil
+						}
+
+						var instances []string
+						for _, instance := range sg.Instances {
+							instances = append(instances, instance.UUID)
+						}
+
+						log.G(ctx).Infof("deleting %d instances...", len(instances))
+
+						_, err = opts.Client.Instances().WithMetro(opts.Metro).Delete(ctx, instances...)
+						return err
+					},
+				),
+			)
+		}
+	} else if opts.WaitEmpty {
 		services := args
 		args = []string{}
 
@@ -161,7 +202,9 @@ func Remove(ctx context.Context, opts *RemoveOptions, args ...string) error {
 				),
 			)
 		}
+	}
 
+	if opts.Drain || opts.WaitEmpty {
 		treemodel, err := processtree.NewProcessTree(
 			ctx,
 			[]processtree.ProcessTreeOption{
