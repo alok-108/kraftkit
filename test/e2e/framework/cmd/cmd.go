@@ -7,7 +7,6 @@ package cmd
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"os/exec"
@@ -80,27 +79,6 @@ func NewKraftPrivileged(stdout, stderr *IOStream, cfgPath string) *Cmd {
 // reports.
 type Cmd struct {
 	*exec.Cmd
-}
-
-// Run runs the command, and automatically injects the output to stderr in the
-// returned ExitError, in case such an error occurs.
-// It is similar to (*exec.Cmd).Output, but allows the command to have stdout
-// explicitly set.
-func (c *Cmd) Run() error {
-	if err := c.Cmd.Run(); err != nil {
-		if ee := (&exec.ExitError{}); errors.As(err, &ee) {
-			if r, ok := c.Cmd.Stderr.(io.Reader); ok {
-				b, re := io.ReadAll(r)
-				if re != nil {
-					return fmt.Errorf("%w. Additionally, while reading stderr: %w", err, re)
-				}
-				ee.Stderr = b
-				return &ExitError{ExitError: ee}
-			}
-		}
-	}
-
-	return nil
 }
 
 // DumpError is a common method used across command executions which is
