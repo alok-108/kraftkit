@@ -190,6 +190,8 @@ var _ = Describe("kraft net create", func() {
 
 	When("invoked with one positional argument without a network", func() {
 		BeforeEach(func() {
+			cmd.Args = append(cmd.Args, "--driver", "bridge")
+			cmd.Args = append(cmd.Args, "--network", "172.18.0.1/24")
 			cmd.Args = append(cmd.Args, "t-cr-5")
 		})
 
@@ -228,7 +230,7 @@ var _ = Describe("kraft net create", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(stderrLs.String()).To(BeEmpty())
 			Expect(stdoutLs.String()).To(MatchRegexp(`^NAME[\t ]+NETWORK[\t ]+DRIVER[\t ]+STATUS\n`))
-			Expect(stdoutLs.String()).To(MatchRegexp(`t-cr-5[\t ]+172.18.0.1/16[\t ]+bridge[\t ]+up`))
+			Expect(stdoutLs.String()).To(MatchRegexp(`t-cr-5[\t ]+172.18.0.1/24[\t ]+bridge[\t ]+up`))
 		})
 	})
 })
