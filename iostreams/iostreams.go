@@ -52,7 +52,7 @@ type FileWriter interface {
 	Fd() uintptr
 }
 
-type fileReader interface {
+type FileReader interface {
 	io.ReadCloser
 	Fd() uintptr
 }
@@ -69,7 +69,7 @@ type Terminal interface {
 type IOStreams struct {
 	term Terminal
 
-	In     fileReader
+	In     FileReader
 	Out    FileWriter
 	ErrOut FileWriter
 
@@ -158,7 +158,7 @@ func (s *IOStreams) SetOut(out FileWriter) {
 	s.Out = out
 }
 
-func (s *IOStreams) SetIn(in fileReader) {
+func (s *IOStreams) SetIn(in FileReader) {
 	s.In = in
 }
 
