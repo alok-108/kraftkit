@@ -148,7 +148,7 @@ func NewProcessTree(ctx context.Context, opts []ProcessTreeOption, tree ...*Proc
 		}
 
 		ios.Out = iostreams.NewNoTTYWriter(item, iostreams.G(ctx).Out.Fd())
-		ios.ErrOut = item
+		ios.ErrOut = iostreams.NewNoTTYWriter(item, iostreams.G(ctx).ErrOut.Fd())
 		ios.In = iostreams.G(ctx).In
 		ictx = iostreams.WithIOStreams(ictx, ios)
 
@@ -189,7 +189,7 @@ func (pti *ProcessTreeItem) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func (pti *ProcessTreeItem) Fd() int {
+func (pti *ProcessTreeItem) Fd() uintptr {
 	return 0
 }
 
