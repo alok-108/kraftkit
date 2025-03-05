@@ -71,7 +71,7 @@ type IOStreams struct {
 
 	In     fileReader
 	Out    FileWriter
-	ErrOut io.Writer
+	ErrOut FileWriter
 
 	terminalTheme string
 
@@ -429,10 +429,21 @@ func System() *IOStreams {
 		}
 	}
 
+	var stderr FileWriter = os.Stderr
+	// On Windows with no virtual terminal processing support, translate ANSI escape
+	// sequences to console syscalls.
+	if colorableStderr := colorable.NewColorable(os.Stderr); colorableStderr != os.Stderr {
+		// Ensure that the file descriptor of the original stderr is preserved.
+		stderr = &fdWriter{
+			fd:     os.Stderr.Fd(),
+			Writer: colorableStderr,
+		}
+	}
+
 	io := &IOStreams{
 		In:           os.Stdin,
 		Out:          stdout,
-		ErrOut:       colorable.NewColorable(os.Stderr),
+		ErrOut:       stderr,
 		pagerCommand: os.Getenv("PAGER"),
 		term:         &terminal,
 	}
