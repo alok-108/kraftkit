@@ -43,8 +43,8 @@ var _ = Describe("kraft net create", func() {
 			err := cmd.Run()
 			Expect(err).To(HaveOccurred())
 
-			Expect(stderr.String()).To(BeEmpty())
-			Expect(stdout.String()).To(MatchRegexp(`^{"level":"error","msg":"accepts 1 arg\(s\), received 0"}\n`))
+			Expect(stdout.String()).To(BeEmpty())
+			Expect(stderr.String()).To(MatchRegexp(`^{"level":"error","msg":"accepts 1 arg\(s\), received 0"}\n`))
 		})
 	})
 
@@ -75,8 +75,8 @@ var _ = Describe("kraft net create", func() {
 			err := cmd.Run()
 			Expect(err).To(HaveOccurred())
 
-			Expect(stderr.String()).To(BeEmpty())
-			Expect(stdout.String()).To(MatchRegexp(`^{"level":"error","msg":"accepts 1 arg\(s\), received 2"}\n$`))
+			Expect(stdout.String()).To(BeEmpty())
+			Expect(stderr.String()).To(MatchRegexp(`^{"level":"error","msg":"accepts 1 arg\(s\), received 2"}\n$`))
 		})
 	})
 
@@ -90,8 +90,8 @@ var _ = Describe("kraft net create", func() {
 			err := cmd.Run()
 			Expect(err).To(HaveOccurred())
 
-			Expect(stderr.String()).To(BeEmpty())
-			Expect(stdout.String()).To(MatchRegexp(`^{"level":"error","msg":"invalid CIDR address: 172\.45\.1\.1"}\n$`))
+			Expect(stdout.String()).To(BeEmpty())
+			Expect(stderr.String()).To(MatchRegexp(`^{"level":"error","msg":"invalid CIDR address: 172\.45\.1\.1"}\n$`))
 		})
 	})
 
@@ -105,8 +105,8 @@ var _ = Describe("kraft net create", func() {
 			err := cmd.Run()
 			Expect(err).To(HaveOccurred())
 
-			Expect(stderr.String()).To(BeEmpty())
-			Expect(stdout.String()).To(MatchRegexp(`^{"level":"error","msg":"invalid CIDR address: 172\.45\.2/24"}\n$`))
+			Expect(stdout.String()).To(BeEmpty())
+			Expect(stderr.String()).To(MatchRegexp(`^{"level":"error","msg":"invalid CIDR address: 172\.45\.2/24"}\n$`))
 		})
 	})
 
@@ -120,8 +120,8 @@ var _ = Describe("kraft net create", func() {
 			err := cmd.Run()
 			Expect(err).To(HaveOccurred())
 
-			Expect(stderr.String()).To(BeEmpty())
-			Expect(stdout.String()).To(MatchRegexp(`^{"level":"error","msg":"invalid CIDR address: 1234"}\n$`))
+			Expect(stdout.String()).To(BeEmpty())
+			Expect(stderr.String()).To(MatchRegexp(`^{"level":"error","msg":"invalid CIDR address: 1234"}\n$`))
 		})
 	})
 
@@ -136,8 +136,8 @@ var _ = Describe("kraft net create", func() {
 			err := cmd.Run()
 			Expect(err).To(HaveOccurred())
 
-			Expect(stderr.String()).To(BeEmpty())
-			Expect(stdout.String()).To(MatchRegexp(`^{"level":"error","msg":"unsupported network driver strategy: unknown \(contributions welcome\!\)"}\n$`))
+			Expect(stdout.String()).To(BeEmpty())
+			Expect(stderr.String()).To(MatchRegexp(`^{"level":"error","msg":"unsupported network driver strategy: unknown \(contributions welcome\!\)"}\n$`))
 		})
 	})
 
