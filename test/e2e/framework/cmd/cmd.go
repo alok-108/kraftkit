@@ -111,6 +111,9 @@ func (c *Cmd) DumpError(stdoutio, stderrio *IOStream, err error) string {
 		}
 	}
 
+	builder.WriteString("\nerr: ")
+	builder.WriteString(err.Error())
+
 	return builder.String()
 }
 
