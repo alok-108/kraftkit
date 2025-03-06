@@ -206,6 +206,10 @@ func pullArchive(ctx context.Context, manifest *Manifest, resource string, check
 			}
 		}
 
+		if err := os.MkdirAll(filepath.Dir(cache), 0o755); err != nil {
+			return fmt.Errorf("could not create parent directories: %v", err)
+		}
+
 		// Copy the completed download to the local cache path
 		if err := os.Rename(tmpCache, cache); err != nil {
 			return fmt.Errorf("could not move downloaded package '%s' to destination '%s': %v", tmpCache, cache, err)
