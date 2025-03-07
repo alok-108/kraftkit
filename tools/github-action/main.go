@@ -85,6 +85,39 @@ func (opts *GithubAction) execScript(ctx context.Context, path string) error {
 }
 
 func (opts *GithubAction) Run(ctx context.Context, args []string) (err error) {
+	if opts.RuntimeDir != "" {
+		config.G[config.KraftKit](ctx).RuntimeDir = opts.RuntimeDir
+	}
+
+	if opts.Auths != "" {
+		var auths map[string]config.AuthConfig
+		if err := yaml.Unmarshal([]byte(opts.Auths), &auths); err != nil {
+			return fmt.Errorf("could not parse auths: %w", err)
+		}
+
+		if config.G[config.KraftKit](ctx).Auth == nil {
+			config.G[config.KraftKit](ctx).Auth = make(map[string]config.AuthConfig)
+		}
+
+		for domain, auth := range auths {
+			config.G[config.KraftKit](ctx).Auth[domain] = auth
+		}
+	}
+
+	if opts.Manifests != "" {
+		var manifests []string
+		if err := yaml.Unmarshal([]byte(opts.Manifests), &manifests); err != nil {
+			return fmt.Errorf("could not parse manifests: %w", err)
+		}
+		config.G[config.KraftKit](ctx).Unikraft.Manifests = manifests
+	}
+
+	// Save configuration to disk such that uses of `before`, `run` and `after`
+	// scripts can access the configuration via `kraft`.
+	if err := config.M[config.KraftKit](ctx).Write(true); err != nil {
+		return fmt.Errorf("could not write configuration: %w", err)
+	}
+
 	if (len(opts.Arch) > 0 || len(opts.Plat) > 0) && len(opts.Target) > 0 {
 		return fmt.Errorf("target and platform/architecture are mutually exclusive")
 	}
@@ -111,33 +144,6 @@ func (opts *GithubAction) Run(ctx context.Context, args []string) (err error) {
 		log.G(ctx).SetLevel(logrus.DebugLevel)
 	case "trace":
 		log.G(ctx).SetLevel(logrus.TraceLevel)
-	}
-
-	if opts.RuntimeDir != "" {
-		config.G[config.KraftKit](ctx).RuntimeDir = opts.RuntimeDir
-	}
-
-	if opts.Auths != "" {
-		var auths map[string]config.AuthConfig
-		if err := yaml.Unmarshal([]byte(opts.Auths), &auths); err != nil {
-			return fmt.Errorf("could not parse auths: %w", err)
-		}
-
-		if config.G[config.KraftKit](ctx).Auth == nil {
-			config.G[config.KraftKit](ctx).Auth = make(map[string]config.AuthConfig)
-		}
-
-		for domain, auth := range auths {
-			config.G[config.KraftKit](ctx).Auth[domain] = auth
-		}
-	}
-
-	if opts.Manifests != "" {
-		var manifests []string
-		if err := yaml.Unmarshal([]byte(opts.Manifests), &manifests); err != nil {
-			return fmt.Errorf("could not parse manifests: %w", err)
-		}
-		config.G[config.KraftKit](ctx).Unikraft.Manifests = manifests
 	}
 
 	if len(opts.Workdir) == 0 {
