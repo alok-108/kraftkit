@@ -162,7 +162,29 @@ func Remove(ctx context.Context, opts *RemoveOptions, args ...string) error {
 
 						log.G(ctx).Infof("deleting %d instances...", len(instances))
 
-						_, err = opts.Client.Instances().WithMetro(opts.Metro).Delete(ctx, instances...)
+						if _, err := opts.Client.Instances().WithMetro(opts.Metro).Delete(ctx, instances...); err != nil {
+							return err
+						}
+
+						// Wait until the instances are deleted
+						for {
+							resp, err := opts.Client.Instances().WithMetro(opts.Metro).Get(ctx, instances...)
+							if err != nil {
+								break
+							}
+
+							noError := true
+							for _, entry := range resp.Data.Entries {
+								if entry.Status != "error" {
+									noError = false
+								}
+							}
+
+							if noError {
+								break
+							}
+						}
+
 						return err
 					},
 				),
