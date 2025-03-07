@@ -162,6 +162,7 @@ runs:
       sudo find /home/runner -exec chmod g+rwx {} +
       sudo find /github/workspace -exec chmod g+rwx {} +
       sudo chmod g+rwx . || true;
+      mkdir -p "${{ inputs.runtimedir }}";
       sudo chmod g+rwx "${{ inputs.runtimedir }}" || true;
       if [ -n "${{ inputs.workdir }}" ]; then
           sudo chmod g+rwx "${{ inputs.workdir }}" || true;
