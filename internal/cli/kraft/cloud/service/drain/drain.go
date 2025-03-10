@@ -31,10 +31,9 @@ type DrainOptions struct {
 
 func NewCmd() *cobra.Command {
 	cmd, err := cmdfactory.New(&DrainOptions{}, cobra.Command{
-		Short:   "Drain instances in a service",
-		Use:     "drain [FLAGS] [NAME|UUID [NAME|UUID]...]",
-		Args:    cobra.ArbitraryArgs,
-		Aliases: []string{"delete", "del", "rm"},
+		Short: "Drain instances in a service",
+		Use:   "drain [FLAGS] [NAME|UUID [NAME|UUID]...]",
+		Args:  cobra.ArbitraryArgs,
 		Example: heredoc.Doc(`
 			# Drain a service from your account by UUID.
 			$ kraft cloud service drain fd1684ea-7970-4994-92d6-61dcc7905f2b
