@@ -19,7 +19,7 @@ require (
 	github.com/cli/go-gh/v2 v2.11.2
 	github.com/cli/safeexec v1.0.1
 	github.com/compose-spec/compose-go v1.20.2
-	github.com/compose-spec/compose-go/v2 v2.4.7
+	github.com/compose-spec/compose-go/v2 v2.4.8
 	github.com/containerd/containerd v1.7.26
 	github.com/containerd/errdefs v1.0.0
 	github.com/containerd/log v0.1.0
