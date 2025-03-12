@@ -180,6 +180,8 @@ $(addprefix $(.PROXY), $(BIN)): TAGS += xen
 endif
 $(addprefix $(.PROXY), $(BIN)): TAGS += containers_image_storage_stub
 $(addprefix $(.PROXY), $(BIN)): TAGS += containers_image_openpgp
+$(addprefix $(.PROXY), $(BIN)): TAGS += netgo
+$(addprefix $(.PROXY), $(BIN)): TAGS += osusergo
 $(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.version=$(VERSION)"
 $(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.commit=$(GIT_SHA)"
 $(addprefix $(.PROXY), $(BIN)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.buildTime=$(shell date)"
@@ -214,6 +216,8 @@ $(addprefix $(.PROXY), $(TOOLS)): TAGS += xen
 endif
 $(addprefix $(.PROXY), $(TOOLS)): TAGS += containers_image_storage_stub
 $(addprefix $(.PROXY), $(TOOLS)): TAGS += containers_image_openpgp
+$(addprefix $(.PROXY), $(BIN)): TAGS += netgo
+$(addprefix $(.PROXY), $(BIN)): TAGS += osusergo
 $(addprefix $(.PROXY), $(TOOLS)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.version=$(VERSION)"
 $(addprefix $(.PROXY), $(TOOLS)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.commit=$(GIT_SHA)"
 $(addprefix $(.PROXY), $(TOOLS)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.buildTime=$(shell date)"
@@ -256,7 +260,7 @@ fmt: ## Format all files according to linting preferences.
 
 .PHONY: cicheck
 cicheck: ## Run CI checks.
-	$(GOCILINT) run --build-tags "containers_image_storage_stub,containers_image_openpgp"
+	$(GOCILINT) run --build-tags "containers_image_storage_stub,containers_image_openpgp,osusergo,netgo"
 
 .PHONY: test
 test: test-unit test-framework test-e2e test-cloud-e2e ## Run all tests.
@@ -265,7 +269,7 @@ test: test-unit test-framework test-e2e test-cloud-e2e ## Run all tests.
 test-unit: GOTEST_EXCLUDE := third_party/ test/ hack/ buildenvs/ dist/ docs/ tools/
 test-unit: GOTEST_PKGS := $(foreach pkg,$(filter-out $(GOTEST_EXCLUDE),$(wildcard */)),$(pkg)...)
 test-unit: ## Run unit tests.
-	$(GINKGO) -v -p -randomize-all -tags "containers_image_storage_stub,containers_image_openpgp" $(GOTEST_PKGS)
+	$(GINKGO) -v -p -randomize-all -tags "containers_image_storage_stub,containers_image_openpgp,osusergo,netgo" $(GOTEST_PKGS)
 
 .PHONY: test-e2e
 test-e2e: kraft ## Run CLI end-to-end tests.
@@ -293,12 +297,12 @@ properclean: ## Completely clean the repository's build artifacts.
 .PHONY: docs
 docs: OUTDIR ?= $(WORKDIR)/docs/
 docs: ## Generate Markdown documentation.
-	$(GO) run -tags "containers_image_storage_stub,containers_image_openpgp" $(WORKDIR)/tools/gendocs $(OUTDIR)
+	$(GO) run -tags "containers_image_storage_stub,containers_image_openpgp,osusergo,netgo" $(WORKDIR)/tools/gendocs $(OUTDIR)
 
 .PHONY: man
 man: OUTDIR ?= $(WORKDIR)/docs/man/
 man: ## Generate manpage documentation.
-	$(GO) run -tags "containers_image_storage_stub,containers_image_openpgp" $(WORKDIR)/tools/genman generate $(OUTDIR)
+	$(GO) run -tags "containers_image_storage_stub,containers_image_openpgp,osusergo,netgo" $(WORKDIR)/tools/genman generate $(OUTDIR)
 
 .PHONY: help
 help: ## Show this help menu and exit.
