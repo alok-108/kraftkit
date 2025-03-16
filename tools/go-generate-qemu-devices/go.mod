@@ -2,11 +2,13 @@ module kraftkit.sh/tools/go-generate-qemu-devices
 
 go 1.24.0
 
+toolchain go1.24.1
+
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/golang/glog v1.2.4
 	github.com/iancoleman/strcase v0.3.0
-	kraftkit.sh v0.11.4
+	kraftkit.sh v0.11.5
 	mvdan.cc/gofumpt v0.7.0
 )
 
@@ -32,7 +34,7 @@ require (
 	github.com/spf13/cast v1.7.0 // indirect
 	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/mod v0.22.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/term v0.29.0 // indirect
 	golang.org/x/tools v0.29.0 // indirect
 )
