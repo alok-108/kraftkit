@@ -55,7 +55,7 @@ require (
 	github.com/moby/buildkit v0.20.0
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/termenv v0.16.0
-	github.com/onsi/ginkgo/v2 v2.22.2
+	github.com/onsi/ginkgo/v2 v2.23.3
 	github.com/onsi/gomega v1.36.2
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.1
@@ -293,7 +293,7 @@ require (
 	golang.org/x/net v0.36.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
-	golang.org/x/tools v0.29.0 // indirect
+	golang.org/x/tools v0.30.0 // indirect
 	google.golang.org/genproto v0.0.0-20241118233622-e639e219e697 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241209162323-e6fa225c2576 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250102185135-69823020774d // indirect
