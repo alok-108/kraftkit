@@ -223,8 +223,8 @@ func startBuildkit(ctx context.Context, buildkitVersion string, port int, printf
 	// https://github.com/unikraft/kraftkit/issues/2001
 	defer func() {
 		if r := recover(); r != nil {
-			log.G(ctx).Warn("recovered from BuildKit instantiation panic!")
-			log.G(ctx).Warn("this can be caused by Docker missing from the system, or from being inaccesible")
+			log.G(ctx).Warn("could not start BuildKit ephemeral container")
+			log.G(ctx).Warn("this can be caused by Docker is either not running or inaccessible")
 			log.G(ctx).Warn("")
 			log.G(ctx).Warn("if you think this was caused by something else, please open an issue at:")
 			log.G(ctx).Warn("https://github.com/unikraft/kraftkit/issues")
@@ -345,6 +345,10 @@ func (initrd *dockerfile) Build(ctx context.Context) (string, error) {
 		buildkitd, err := startBuildkit(ctx, buildkitVersion, port, printf)
 		if err != nil {
 			return "", fmt.Errorf("creating buildkit container: %w", err)
+		}
+
+		if buildkitd == nil {
+			return "", fmt.Errorf("could not start ephemeral BuildKit container")
 		}
 
 		defer func() {
