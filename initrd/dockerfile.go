@@ -347,6 +347,10 @@ func (initrd *dockerfile) Build(ctx context.Context) (string, error) {
 			return "", fmt.Errorf("creating buildkit container: %w", err)
 		}
 
+		if buildkitd == nil {
+			return "", fmt.Errorf("could not start ephemeral BuildKit container")
+		}
+
 		defer func() {
 			if err := buildkitd.Terminate(ctx); err != nil && !strings.Contains(err.Error(), "context cancelled") {
 				log.G(ctx).
