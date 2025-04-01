@@ -53,10 +53,14 @@ func (p *packagerKraftfileRuntime) Packagable(ctx context.Context, opts *PkgOpti
 func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, args ...string) ([]pack.Package, error) {
 	var err error
 	var targ target.Target
-	var runtimeName string
+	var runtimeName, runtimeVersion string
 
 	if len(opts.Runtime) > 0 {
-		runtimeName = opts.Runtime
+		var ok bool
+		runtimeName, runtimeVersion, ok = strings.Cut(opts.Runtime, ":")
+		if !ok {
+			runtimeVersion = "latest"
+		}
 	} else {
 		if opts.Project == nil || opts.Project.Runtime() == nil {
 			return nil, fmt.Errorf("cannot use runtime packager without a project runtime")
@@ -68,10 +72,16 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 		runtimeName = utils.RewrapAsKraftCloudPackage(runtimeName)
 	}
 
-	targets := opts.Project.Targets()
+	var targets []target.Target
+
+	if opts.Project != nil {
+		targets = opts.Project.Targets()
+		runtimeVersion = opts.Project.Runtime().Version()
+	}
+
 	qopts := []packmanager.QueryOption{
 		packmanager.WithName(runtimeName),
-		packmanager.WithVersion(opts.Project.Runtime().Version()),
+		packmanager.WithVersion(runtimeVersion),
 	}
 
 	if len(targets) == 1 {
@@ -134,7 +144,7 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 			fmt.Sprintf(
 				"searching for %s:%s",
 				runtimeName,
-				opts.Project.Runtime().Version(),
+				runtimeVersion,
 			),
 			"",
 			func(ctx context.Context) error {
@@ -172,30 +182,30 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 		if len(opts.Platform) > 0 && len(opts.Architecture) > 0 {
 			return nil, fmt.Errorf(
 				"could not find runtime '%s:%s' (%s/%s)",
-				opts.Project.Runtime().Name(),
-				opts.Project.Runtime().Version(),
+				runtimeName,
+				runtimeVersion,
 				opts.Platform,
 				opts.Architecture,
 			)
 		} else if len(opts.Architecture) > 0 {
 			return nil, fmt.Errorf(
 				"could not find runtime '%s:%s' with '%s' architecture",
-				opts.Project.Runtime().Name(),
-				opts.Project.Runtime().Version(),
+				runtimeName,
+				runtimeVersion,
 				opts.Architecture,
 			)
 		} else if len(opts.Platform) > 0 {
 			return nil, fmt.Errorf(
 				"could not find runtime '%s:%s' with '%s' platform",
-				opts.Project.Runtime().Name(),
-				opts.Project.Runtime().Version(),
+				runtimeName,
+				runtimeVersion,
 				opts.Platform,
 			)
 		} else {
 			return nil, fmt.Errorf(
 				"could not find runtime %s:%s",
-				opts.Project.Runtime().Name(),
-				opts.Project.Runtime().Version(),
+				runtimeName,
+				runtimeVersion,
 			)
 		}
 	} else if len(packs) == 1 {
@@ -300,7 +310,7 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 	// If no arguments have been specified, use the ones which are default and
 	// that have been included in the package.
 	if len(opts.Args) == 0 {
-		if len(opts.Project.Command()) > 0 {
+		if opts.Project != nil && len(opts.Project.Command()) > 0 {
 			opts.Args = opts.Project.Command()
 		} else if cmds != nil {
 			opts.Args = cmds
@@ -319,7 +329,10 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 		}
 	}
 
-	labels := opts.Project.Labels()
+	var labels map[string]string
+	if opts.Project != nil {
+		labels = opts.Project.Labels()
+	}
 	if len(opts.Labels) > 0 {
 		for _, label := range opts.Labels {
 			kv := strings.SplitN(label, "=", 2)
