@@ -93,9 +93,9 @@ EOF
 
 # Helper variables
 _NO_ANS="^n$|^N$|^no$|^No$|^nO$"
-_YES_ANS="^y$|^Y$|^yes$|^Yes$|^yEs$|^yeS$|^YEs$|^yES$|^YES$"
+_YES_ANS="^y$|^Y$|^yes$|^Yes$|^yEs$|^yeS$|^YEs$|^yES$|^YeS$|^YES$"
 _NO_ANS_DEFAULT="^n$|^N$|^no$|^No$|^nO$|^\n$|^$"
-_YES_ANS_DEFAULT="^y$|^Y$|^yes$|^Yes$|^yEs$|^yeS$|^YEs$|^yES$|^YES$|^\n$|^$"
+_YES_ANS_DEFAULT="^y$|^Y$|^yes$|^Yes$|^yEs$|^yeS$|^YEs$|^yES$|^YeS$|^YES$|^\n$|^$"
 _RETVAL=""
 _CLEANUP_ARCHIVE=""
 _CLEANUP_BINARY=""
