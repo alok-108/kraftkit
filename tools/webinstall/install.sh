@@ -1516,7 +1516,7 @@ install_dependencies_gnu() {
     return 0
 }
 
-# install_dependencies_gnu installs all kraftkit dependencies needed for
+# install_dependencies_musl installs all kraftkit dependencies needed for
 # building and running unikernels on musl distributions.
 # Returns:
 # Code: 0 on success, 1 on error
