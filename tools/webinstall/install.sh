@@ -93,9 +93,9 @@ EOF
 
 # Helper variables
 _NO_ANS="^n$|^N$|^no$|^No$|^nO$"
-_YES_ANS="^y$|^Y$|^yes$|^Yes$|^yEs$|^yeS$|^YEs$|^yES$|^YES$"
+_YES_ANS="^y$|^Y$|^yes$|^Yes$|^yEs$|^yeS$|^YEs$|^yES$|^YeS$|^YES$"
 _NO_ANS_DEFAULT="^n$|^N$|^no$|^No$|^nO$|^\n$|^$"
-_YES_ANS_DEFAULT="^y$|^Y$|^yes$|^Yes$|^yEs$|^yeS$|^YEs$|^yES$|^YES$|^\n$|^$"
+_YES_ANS_DEFAULT="^y$|^Y$|^yes$|^Yes$|^yEs$|^yeS$|^YEs$|^yES$|^YeS$|^YES$|^\n$|^$"
 _RETVAL=""
 _CLEANUP_ARCHIVE=""
 _CLEANUP_BINARY=""
@@ -1516,7 +1516,7 @@ install_dependencies_gnu() {
     return 0
 }
 
-# install_dependencies_gnu installs all kraftkit dependencies needed for
+# install_dependencies_musl installs all kraftkit dependencies needed for
 # building and running unikernels on musl distributions.
 # Returns:
 # Code: 0 on success, 1 on error
