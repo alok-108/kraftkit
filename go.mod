@@ -13,7 +13,7 @@ require (
 	github.com/anchore/stereoscope v0.0.13
 	github.com/briandowns/spinner v1.23.2
 	github.com/charmbracelet/bubbles v0.21.0
-	github.com/charmbracelet/bubbletea v1.3.4
+	github.com/charmbracelet/bubbletea v1.3.5
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250319133953-166f707985bc
 	github.com/cli/cli/v2 v2.69.0
 	github.com/cli/go-gh/v2 v2.12.0
