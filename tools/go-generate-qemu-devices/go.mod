@@ -6,7 +6,7 @@ toolchain go1.24.1
 
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0
-	github.com/golang/glog v1.2.4
+	github.com/golang/glog v1.2.5
 	github.com/iancoleman/strcase v0.3.0
 	kraftkit.sh v0.11.6
 	mvdan.cc/gofumpt v0.8.0
