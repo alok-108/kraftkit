@@ -35,7 +35,7 @@ require (
 	github.com/erikgeiser/promptkit v0.9.0
 	github.com/erikh/ping v0.0.0-20141209185752-d731d249e12a
 	github.com/firecracker-microvm/firecracker-go-sdk v1.0.0
-	github.com/fsnotify/fsnotify v1.8.0
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/getsentry/sentry-go v0.32.0
 	github.com/go-git/go-git/v5 v5.16.0
 	github.com/gobwas/glob v0.2.3
