@@ -12,11 +12,6 @@ updates:
     commit-message:
       prefix: gomod # Prefix messages with
       include: scope # List all updated dependencies
-    reviewers:
-      - nderjung
-      - craciunoiuc
-    assignees:
-      - nderjung
   - package-ecosystem: gomod
     directory: /tools/go-generate-qemu-devices
     target-branch: staging
@@ -37,11 +32,6 @@ updates:
     commit-message:
       prefix: gomod # Prefix messages with
       include: scope # List all updated dependencies
-    reviewers:
-      - nderjung
-      - craciunoiuc
-    assignees:
-      - nderjung
 
   - package-ecosystem: github-actions
     directory: /
