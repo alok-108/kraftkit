@@ -27,11 +27,6 @@ updates:
     commit-message:
       prefix: gomod # Prefix messages with
       include: scope # List all updated dependencies
-    reviewers:
-      - nderjung
-      - craciunoiuc
-    assignees:
-      - nderjung
   - package-ecosystem: gomod
     directory: /tools/protoc-gen-go-netconn
     target-branch: staging
