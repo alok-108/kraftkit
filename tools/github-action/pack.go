@@ -479,8 +479,6 @@ func (opts *GithubAction) packRuntime(ctx context.Context, output string, format
 		args = strings.Split(opts.Args, " ")
 	}
 
-	fmt.Println("Packaging args:", args)
-
 	labels := opts.project.Labels()
 
 	var popts []packmanager.PackOption
@@ -513,7 +511,6 @@ func (opts *GithubAction) packRuntime(ctx context.Context, output string, format
 	}
 
 	if opts.Push {
-		fmt.Println("Pushing")
 		return packaged[0].Push(ctx)
 	}
 
