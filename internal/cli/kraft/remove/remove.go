@@ -82,6 +82,10 @@ func (opts *RemoveOptions) Run(ctx context.Context, args []string) error {
 		return fmt.Errorf("no machine(s) specified")
 	}
 
+	if len(args) > 0 && opts.All {
+		return fmt.Errorf("cannot specify machines and --all at the same time")
+	}
+
 	platform := mplatform.PlatformUnknown
 	var controller machineapi.MachineService
 
@@ -119,14 +123,15 @@ func (opts *RemoveOptions) Run(ctx context.Context, args []string) error {
 
 	var remove []machineapi.Machine
 
-	for _, machine := range machines.Items {
-		if len(args) == 0 && opts.All {
-			remove = append(remove, machine)
-			continue
-		}
-
-		if args[0] == machine.Name || args[0] == string(machine.UID) {
-			remove = append(remove, machine)
+	if len(args) == 0 && opts.All {
+		remove = machines.Items
+	} else {
+		for _, arg := range args {
+			for _, machine := range machines.Items {
+				if arg == machine.Name || arg == string(machine.UID) {
+					remove = append(remove, machine)
+				}
+			}
 		}
 	}
 
