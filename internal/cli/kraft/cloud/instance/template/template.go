@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"kraftkit.sh/internal/cli/kraft/cloud/instance/template/create"
 	"kraftkit.sh/internal/cli/kraft/cloud/instance/template/list"
 
 	"kraftkit.sh/cmdfactory"
@@ -26,6 +27,9 @@ func NewCmd() *cobra.Command {
 		Aliases: []string{"templates"},
 		Long:    "Manage templates on Unikraft Cloud.",
 		Example: heredoc.Doc(`
+			# Create a template in your account.
+			$ kraft cloud instance template create my-template
+
 			# List all templates in your account.
 			$ kraft cloud instance template list
 		`),
@@ -38,6 +42,7 @@ func NewCmd() *cobra.Command {
 		panic(err)
 	}
 
+	cmd.AddCommand(create.NewCmd())
 	cmd.AddCommand(list.NewCmd())
 
 	return cmd
