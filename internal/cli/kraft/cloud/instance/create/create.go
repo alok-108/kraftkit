@@ -197,7 +197,7 @@ func Create(ctx context.Context, opts *CreateOptions, args ...string) (*kcclient
 	req := kcinstances.CreateRequest{
 		Autostart:     &opts.Start,
 		Features:      features,
-		Image:         opts.Image,
+		Image:         &opts.Image,
 		RestartPolicy: opts.RestartPolicy,
 	}
 	if opts.Vcpus > 0 {
