@@ -15,6 +15,7 @@ import (
 	"kraftkit.sh/internal/cli/kraft/cloud/instance/template/create"
 	"kraftkit.sh/internal/cli/kraft/cloud/instance/template/get"
 	"kraftkit.sh/internal/cli/kraft/cloud/instance/template/list"
+	"kraftkit.sh/internal/cli/kraft/cloud/instance/template/remove"
 
 	"kraftkit.sh/cmdfactory"
 )
@@ -36,6 +37,9 @@ func NewCmd() *cobra.Command {
 
 			# List all templates in your account.
 			$ kraft cloud instance template list
+
+			# Delete a template in your account.
+			$ kraft cloud instance template remove my-template
 		`),
 		Annotations: map[string]string{
 			cmdfactory.AnnotationHelpGroup:  "kraftcloud-instance-template",
@@ -49,6 +53,7 @@ func NewCmd() *cobra.Command {
 	cmd.AddCommand(create.NewCmd())
 	cmd.AddCommand(get.NewCmd())
 	cmd.AddCommand(list.NewCmd())
+	cmd.AddCommand(remove.NewCmd())
 
 	return cmd
 }
