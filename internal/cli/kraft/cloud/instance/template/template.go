@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"kraftkit.sh/internal/cli/kraft/cloud/instance/template/create"
+	"kraftkit.sh/internal/cli/kraft/cloud/instance/template/get"
 	"kraftkit.sh/internal/cli/kraft/cloud/instance/template/list"
 
 	"kraftkit.sh/cmdfactory"
@@ -30,6 +31,9 @@ func NewCmd() *cobra.Command {
 			# Create a template in your account.
 			$ kraft cloud instance template create my-template
 
+			# Get a template in your account.
+			$ kraft cloud instance template get my-template
+
 			# List all templates in your account.
 			$ kraft cloud instance template list
 		`),
@@ -43,6 +47,7 @@ func NewCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(create.NewCmd())
+	cmd.AddCommand(get.NewCmd())
 	cmd.AddCommand(list.NewCmd())
 
 	return cmd
