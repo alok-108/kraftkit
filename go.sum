@@ -195,8 +195,8 @@ github.com/cilium/ebpf v0.0.0-20200110133405-4032b1d8aae3/go.mod h1:MA5e5Lr8slmE
 github.com/cilium/ebpf v0.0.0-20200702112145-1c8d4c9ef775/go.mod h1:7cR51M8ViRLIdUjrmSXlK9pkrsDlLHbO8jiB8X8JnOc=
 github.com/cilium/ebpf v0.2.0/go.mod h1:To2CFviqOWL/M0gIMsvSMlqe7em/l1ALkX1PyjrX2Qs=
 github.com/cilium/ebpf v0.4.0/go.mod h1:4tRaxcgiL706VnOzHOdBlY8IEAIdxINsQBcU4xJJXRs=
-github.com/cli/cli/v2 v2.72.0 h1:zVzsie8Fa6a4z+LpnHRMcmZPyNwvKo0WVxSAcIVeaec=
-github.com/cli/cli/v2 v2.72.0/go.mod h1:T4+Ac/DIF/H95otN0XV/mmjCyu4cAPMgOS7Q/MzzLMY=
+github.com/cli/cli/v2 v2.73.0 h1:T5qV8HaKpq0W/9qiufUC0gFZuinFK6q0WLBEdOOIAxE=
+github.com/cli/cli/v2 v2.73.0/go.mod h1:Xl7qFTqGVjvVtySbd7xj4FwA7tbP9jO2S1i32XlUr00=
 github.com/cli/go-gh/v2 v2.12.0 h1:PIurZ13fXbWDbr2//6ws4g4zDbryO+iDuTpiHgiV+6k=
 github.com/cli/go-gh/v2 v2.12.0/go.mod h1:+5aXmEOJsH9fc9mBHfincDwnS02j2AIA/DsTH0Bk5uw=
 github.com/cli/safeexec v1.0.1 h1:e/C79PbXF4yYTN/wauC4tviMxEV13BwljGj0N9j+N00=
