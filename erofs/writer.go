@@ -20,6 +20,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -70,12 +72,26 @@ func (w *writer) write() error {
 		return fmt.Errorf("failed to write data blocks: %w", err)
 	}
 
+	// Generate a UUID for the filesystem.
+	uuidBytes, err := uuid.New().MarshalBinary()
+	if err != nil {
+		return fmt.Errorf("failed to generate UUID: %w", err)
+	}
+	var uuid [16]uint8
+	copy(uuid[:], uuidBytes)
+
+	timeNow := time.Now()
+
 	sb := SuperBlock{
 		Magic:         SuperBlockMagicV1,
 		BlockSizeBits: BlockSizeBits,
 		Inodes:        uint64(len(w.inodes)),
 		Blocks:        uint32(1 + (metaSize+dataSize)/BlockSize),
 		MetaBlockAddr: uint32(metaBlockAddr),
+		UUID:          uuid,
+		BuildTime:     uint64(timeNow.Unix()),
+		BuildTimeNsec: uint32(timeNow.Nanosecond()),
+		FeatureCompat: EROFS_FEATURE_COMPAT_SB_CHKSUM | EROFS_FEATURE_COMPAT_MTIME,
 		// TODO: other fields (volume name, etc.)
 	}
 
