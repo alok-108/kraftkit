@@ -34,10 +34,16 @@ const (
 
 // Create creates an EROFS filesystem image from the source filesystem and writes
 // it to the destination writer.
-func Create(dst io.WriterAt, src fs.FS, allRoot bool) error {
+func Create(dst io.WriterAt, src fs.FS, opts ...ErofsCreateOption) error {
 	w := &writer{
 		src: src,
 		dst: dst,
+	}
+
+	for _, opt := range opts {
+		if err := opt(&w.opts); err != nil {
+			return err
+		}
 	}
 
 	return w.write()
@@ -48,6 +54,7 @@ type writer struct {
 	dst        io.WriterAt
 	inodes     map[string]any
 	inodeOrder []string
+	opts       ErofsCreateOptions
 }
 
 func (w *writer) write() error {
@@ -303,7 +310,7 @@ func (w *writer) populateInodes() error {
 			nlink = len(entries) + 2
 		}
 
-		w.inodes[path] = toInode(fi, nlink)
+		w.inodes[path] = toInode(fi, nlink, w.opts.allRoot)
 		w.inodeOrder = append(w.inodeOrder, path)
 
 		return nil
@@ -406,8 +413,13 @@ func (w *writer) dataForInode(path string, ino any) (io.ReadCloser, int64, error
 	}
 }
 
-func toInode(fi fs.FileInfo, nlink int) any {
-	uid, gid := getOwner(fi)
+func toInode(fi fs.FileInfo, nlink int, allRoot bool) any {
+	var uid, gid int
+
+	// If allRoot is true, we set the UID and GID to 0 (root).
+	if !allRoot {
+		uid, gid = getOwner(fi)
+	}
 
 	// Can we use a compact inode?
 	compact := fi.Size() <= math.MaxUint32 &&
