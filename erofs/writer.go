@@ -23,10 +23,12 @@ import (
 )
 
 const (
-	BlockSize         = 4096
-	BlockSizeBits     = 12
-	InodeSlotSize     = 1 << InodeSlotBits
-	MaxInlineDataSize = BlockSize / 4
+	BlockSize     = 4096
+	BlockSizeBits = 12
+	InodeSlotSize = 1 << InodeSlotBits
+	// MaxInlineDataSize = BlockSize / 4
+	// We change this to 0 to represent the flag '-E noinline_data'
+	MaxInlineDataSize = 0
 )
 
 // Create creates an EROFS filesystem image from the source filesystem and writes
