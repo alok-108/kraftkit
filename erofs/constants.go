@@ -91,3 +91,10 @@ func statModeFromFileMode(mode fs.FileMode) uint16 {
 
 	return stMode
 }
+
+// EROFS feature compatibility flags.
+const (
+	EROFS_FEATURE_COMPAT_SB_CHKSUM = 1 << iota
+	EROFS_FEATURE_COMPAT_MTIME
+	EROFS_FEATURE_COMPAT_XATTR_FILTER
+)
