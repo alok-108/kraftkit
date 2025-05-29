@@ -18,8 +18,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dpeckett/archivefs/erofs"
-	"github.com/rogpeppe/go-internal/dirhash"
+	"golang.org/x/mod/sumdb/dirhash"
+	"kraftkit.sh/erofs"
 
 	"github.com/stretchr/testify/require"
 )
@@ -236,45 +236,173 @@ func TestEROFS(t *testing.T) {
 }
 
 func TestEROFSCreate(t *testing.T) {
-	srcFile, err := os.Open("testdata/toybox.img")
+	input := "testdata/testfs.erofs"
+	output := "testdata/testfs-test.erofs"
+
+	inputFile, err := os.Open(input)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, srcFile.Close())
+		require.NoError(t, inputFile.Close())
 	})
 
-	srcFS, err := erofs.Open(srcFile)
-	require.NoError(t, err)
-
-	dstFile, err := os.OpenFile(filepath.Join(t.TempDir()+"/toybox.img"), os.O_RDWR|os.O_CREATE, 0o644)
+	outputFile, err := os.Create(output)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, dstFile.Close())
+		require.NoError(t, os.Remove(output))
 	})
 
-	require.NoError(t, erofs.Create(dstFile, srcFS))
+	err = erofs.Create(outputFile, os.DirFS("testdata/testfs"), erofs.WithAllRoot(true))
+	require.NoError(t, err)
+	require.NoError(t, outputFile.Close())
 
-	dstFS, err := erofs.Open(dstFile)
+	// Original file as created by `mkfs.erofs`
+	refSys, err := erofs.Open(inputFile)
 	require.NoError(t, err)
 
-	var files []string
-	err = fs.WalkDir(dstFS, ".", func(file string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
+	// Created file as created by `erofs.Create`
+	outputFile, err = os.Open(output)
+	require.NoError(t, err)
+	testSys, err := erofs.Open(outputFile)
+	require.NoError(t, err)
 
-		if d.IsDir() || d.Type()&fs.ModeSymlink != 0 {
-			return nil
-		}
+	t.Run("Readlink Dir", func(t *testing.T) {
+		refLink, err := refSys.ReadLink("dir-link")
+		require.NoError(t, err)
 
-		files = append(files, filepath.ToSlash(file))
-		return nil
+		testLink, err := testSys.ReadLink("dir-link")
+		require.NoError(t, err)
+
+		require.Equal(t, "dir", refLink)
+		require.Equal(t, "dir", testLink)
 	})
-	require.NoError(t, err)
 
-	h, err := dirhash.Hash1(files, func(name string) (io.ReadCloser, error) {
-		return srcFS.Open(name)
+	t.Run("Readlink File", func(t *testing.T) {
+		refLink, err := refSys.ReadLink("file-link")
+		require.NoError(t, err)
+
+		testLink, err := testSys.ReadLink("file-link")
+		require.NoError(t, err)
+
+		require.Equal(t, "file.txt", refLink)
+		require.Equal(t, "file.txt", testLink)
 	})
-	require.NoError(t, err)
 
-	require.Equal(t, "h1:adgxkqVceeKMyJdMZMvcUIbg94TthnXUmOeufCPuzQI=", h)
+	t.Run("Stat", func(t *testing.T) {
+		t.Run("File", func(t *testing.T) {
+			infoRef, err := refSys.Stat("dir/file2.txt")
+			require.NoError(t, err)
+
+			infoTest, err := testSys.Stat("dir/file2.txt")
+			require.NoError(t, err)
+
+			require.Equal(t, "file2.txt", infoRef.Name())
+			require.Equal(t, "file2.txt", infoTest.Name())
+
+			require.Equal(t, 5, int(infoRef.Size()))
+			require.Equal(t, 5, int(infoTest.Size()))
+
+			// Inconsistent unpacking in CI
+			// require.Equal(t, os.FileMode(0o644), infoRef.Mode()&fs.ModePerm)
+			require.Equal(t, os.FileMode(0o644), infoTest.Mode()&fs.ModePerm)
+
+			require.False(t, infoRef.IsDir())
+			require.False(t, infoTest.IsDir())
+
+			inoRef, ok := infoRef.Sys().(*erofs.Inode)
+			require.True(t, ok)
+			require.Zero(t, inoRef.UID())
+			require.Zero(t, inoRef.GID())
+
+			inoTest, ok := infoTest.Sys().(*erofs.Inode)
+			require.True(t, ok)
+			require.Zero(t, inoTest.UID())
+			require.Zero(t, inoTest.GID())
+		})
+
+		t.Run("Hardlink", func(t *testing.T) {
+			infoRef, err := refSys.Stat("file2-hard-link")
+			require.NoError(t, err)
+
+			infoTest, err := testSys.Stat("file2-hard-link")
+			require.NoError(t, err)
+
+			require.Equal(t, "file2-hard-link", infoRef.Name())
+			require.Equal(t, "file2-hard-link", infoTest.Name())
+
+			require.Equal(t, 5, int(infoRef.Size()))
+			require.Equal(t, 5, int(infoTest.Size()))
+
+			// Inconsistent unpacking in CI
+			// require.Equal(t, os.FileMode(0o644), infoRef.Mode()&fs.ModePerm)
+			require.Equal(t, os.FileMode(0o644), infoTest.Mode()&fs.ModePerm)
+
+			require.False(t, infoRef.IsDir())
+			require.False(t, infoTest.IsDir())
+
+			inoRef, ok := infoRef.Sys().(*erofs.Inode)
+			require.True(t, ok)
+			require.Zero(t, inoRef.UID())
+			require.Zero(t, inoRef.GID())
+			require.Equal(t, uint32(0x2), inoRef.Nlink())
+
+			inoTest, ok := infoTest.Sys().(*erofs.Inode)
+			require.True(t, ok)
+			require.Zero(t, inoTest.UID())
+			require.Zero(t, inoTest.GID())
+			require.Equal(t, uint32(0x2), inoTest.Nlink())
+		})
+
+		t.Run("Dir", func(t *testing.T) {
+			infoRef, err := refSys.Stat("dir")
+			require.NoError(t, err)
+
+			infoTest, err := testSys.Stat("dir")
+			require.NoError(t, err)
+
+			require.Equal(t, "dir", infoRef.Name())
+			require.Equal(t, "dir", infoTest.Name())
+
+			// Inconsistent unpacking in CI
+			// require.Equal(t, os.FileMode(0o755), infoRef.Mode()&fs.ModePerm)
+			require.Equal(t, os.FileMode(0o755), infoTest.Mode()&fs.ModePerm)
+
+			require.True(t, infoRef.IsDir())
+			require.True(t, infoTest.IsDir())
+
+			inoRef, ok := infoRef.Sys().(*erofs.Inode)
+			require.True(t, ok)
+			require.Zero(t, inoRef.UID())
+			require.Zero(t, inoRef.GID())
+
+			inoTest, ok := infoTest.Sys().(*erofs.Inode)
+			require.True(t, ok)
+			require.Zero(t, inoTest.UID())
+		})
+		t.Run("Symlink", func(t *testing.T) {
+			infoRef, err := refSys.StatLink("file-link")
+			require.NoError(t, err)
+
+			infoTest, err := testSys.StatLink("file-link")
+			require.NoError(t, err)
+
+			require.Equal(t, "file-link", infoRef.Name())
+			require.Equal(t, "file-link", infoTest.Name())
+
+			require.Equal(t, os.FileMode(0o777), infoRef.Mode()&fs.ModePerm)
+			require.Equal(t, os.FileMode(0o777), infoTest.Mode()&fs.ModePerm)
+
+			require.False(t, infoRef.IsDir())
+			require.False(t, infoTest.IsDir())
+
+			ino, ok := infoRef.Sys().(*erofs.Inode)
+			require.True(t, ok)
+			require.Zero(t, ino.UID())
+			require.Zero(t, ino.GID())
+
+			inoTest, ok := infoTest.Sys().(*erofs.Inode)
+			require.True(t, ok)
+			require.Zero(t, inoTest.UID())
+			require.Zero(t, inoTest.GID())
+		})
+	})
 }
