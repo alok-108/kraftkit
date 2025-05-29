@@ -17,6 +17,7 @@ import (
 	"io/fs"
 )
 
+// Partially stubbed
 func getOwner(fi fs.FileInfo) (uid, gid int) {
 	switch fi.Sys().(type) {
 	case *tar.Header:
@@ -27,4 +28,14 @@ func getOwner(fi fs.FileInfo) (uid, gid int) {
 	}
 
 	return
+}
+
+// Stubbed
+func getNLinks(_ fs.FileInfo) int {
+	return 1
+}
+
+// Stubbed
+func getIno(_ fs.FileInfo) uint64 {
+	return 0
 }

@@ -35,3 +35,25 @@ func getOwner(fi fs.FileInfo) (uid, gid int) {
 
 	return
 }
+
+func getNLinks(fi fs.FileInfo) int {
+	switch fi.Sys().(type) {
+	case *syscall.Stat_t:
+		stat := fi.Sys().(*syscall.Stat_t)
+
+		return int(stat.Nlink)
+	}
+
+	return 1 // Default to 1 link if we can't determine it
+}
+
+func getIno(fi fs.FileInfo) uint64 {
+	switch fi.Sys().(type) {
+	case *syscall.Stat_t:
+		stat := fi.Sys().(*syscall.Stat_t)
+
+		return stat.Ino
+	}
+
+	return 0
+}

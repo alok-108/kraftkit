@@ -57,6 +57,13 @@ type writer struct {
 	opts       ErofsCreateOptions
 }
 
+type inodeCount struct {
+	Count int
+	Inode uint64
+}
+
+var fsToErofsLinkMap = map[uint64]inodeCount{}
+
 func (w *writer) write() error {
 	if err := w.populateInodes(); err != nil {
 		return fmt.Errorf("failed to populate inodes: %w", err)
@@ -148,8 +155,39 @@ func (w *writer) firstPass() (metaSize, dataSize int64, err error) {
 
 		switch ino := ino.(type) {
 		case InodeCompact:
-			ino.Ino = nid
-			ino.Size = uint32(size)
+			if ino.Mode&S_IFMT == S_IFDIR {
+				ino.Ino = nid
+				ino.Size = uint32(size)
+			} else {
+				fsys, ok := w.src.(fs.ReadLinkFS)
+				if !ok {
+					return metaSize, dataSize, fmt.Errorf("source filesystem must implement readLinkFS")
+				}
+
+				info, err := fsys.Lstat(path)
+				if err != nil {
+					return metaSize, dataSize, fmt.Errorf("failed to stat file %q: %w", path, err)
+				}
+				fsIno := getIno(info)
+
+				if entry, ok := fsToErofsLinkMap[fsIno]; ok {
+					if fsToErofsLinkMap[fsIno].Count == 0 {
+						ino.Ino = nid
+						entry.Count = 1
+						entry.Inode = uint64(ino.Ino)
+					} else {
+						// If this is a hard link, we reuse the inode number from the first
+						// file with the same fsInode.
+						ino.Ino = uint32(fsToErofsLinkMap[fsIno].Inode)
+						entry.Count = fsToErofsLinkMap[fsIno].Count + 1
+					}
+					ino.Size = uint32(size)
+
+					fsToErofsLinkMap[fsIno] = entry
+				} else {
+					return metaSize, dataSize, fmt.Errorf("inode count for %q not found", path)
+				}
+			}
 			if inlined {
 				ino.Format = setBits(ino.Format, InodeDataLayoutFlatInline, InodeDataLayoutBit, InodeDataLayoutBits)
 			} else {
@@ -159,8 +197,39 @@ func (w *writer) firstPass() (metaSize, dataSize int64, err error) {
 			w.inodes[path] = ino
 
 		case InodeExtended:
-			ino.Ino = nid
-			ino.Size = uint64(size)
+			if ino.Mode&S_IFMT == S_IFDIR {
+				ino.Ino = nid
+				ino.Size = uint64(size)
+			} else {
+				fsys, ok := w.src.(fs.ReadLinkFS)
+				if !ok {
+					return metaSize, dataSize, fmt.Errorf("source filesystem must implement readLinkFS")
+				}
+
+				info, err := fsys.Lstat(path)
+				if err != nil {
+					return metaSize, dataSize, fmt.Errorf("failed to stat file %q: %w", path, err)
+				}
+				fsIno := getIno(info)
+
+				if entry, ok := fsToErofsLinkMap[fsIno]; ok {
+					if fsToErofsLinkMap[fsIno].Count == 0 {
+						ino.Ino = nid
+						entry.Count = 1
+						entry.Inode = uint64(ino.Ino)
+					} else {
+						// If this is a hard link, we reuse the inode number from the first
+						// file with the same fsInode.
+						ino.Ino = uint32(fsToErofsLinkMap[fsIno].Inode)
+						entry.Count = fsToErofsLinkMap[fsIno].Count + 1
+					}
+					ino.Size = uint64(size)
+
+					fsToErofsLinkMap[fsIno] = entry
+				} else {
+					return metaSize, dataSize, fmt.Errorf("inode count for %q not found", path)
+				}
+			}
 			if inlined {
 				ino.Format = setBits(ino.Format, InodeDataLayoutFlatInline, InodeDataLayoutBit, InodeDataLayoutBits)
 			} else {
@@ -308,6 +377,14 @@ func (w *writer) populateInodes() error {
 			}
 
 			nlink = len(entries) + 2
+		} else {
+			nlink = getNLinks(fi)
+			ino := getIno(fi)
+			if _, ok := fsToErofsLinkMap[ino]; !ok {
+				fsToErofsLinkMap[ino] = inodeCount{
+					Count: 0,
+				}
+			}
 		}
 
 		w.inodes[path] = toInode(fi, nlink, w.opts.allRoot)
