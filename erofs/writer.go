@@ -354,34 +354,47 @@ func (w *writer) dataForInode(path string, ino any) (io.ReadCloser, int64, error
 			return nil, 0, fmt.Errorf("failed to read directory entries: %w", err)
 		}
 
-		dirents := []Dirent{{FileType: uint8(fileTypeFromFileMode(fs.ModeDir))}}
+		// Add information about the directory itself.
+		rootNid, err := w.findInodeAtPath(path)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to find inode for path %q: %w", path, err)
+		}
+		dirents := []Dirent{
+			{
+				Nid:      rootNid,
+				FileType: uint8(fileTypeFromFileMode(fs.ModeDir)),
+			},
+		}
 		names := []string{"."}
 
+		// Add information about the parent directory.
 		if path != "." {
-			dirents = append(dirents, Dirent{FileType: uint8(fileTypeFromFileMode(fs.ModeDir))})
-			names = append(names, "..")
+			parentNid, err := w.findInodeAtPath(filepath.Join(path, ".."))
+			if err != nil {
+				return nil, 0, fmt.Errorf("failed to find inode for path %q: %w", path, err)
+			}
+			dirents = append(dirents, Dirent{
+				Nid:      parentNid,
+				FileType: uint8(fileTypeFromFileMode(fs.ModeDir)),
+			})
+		} else {
+			// The parent is the root directory itself in that case
+			dirents = append(dirents, Dirent{
+				Nid:      rootNid,
+				FileType: uint8(fileTypeFromFileMode(fs.ModeDir)),
+			})
 		}
+		names = append(names, "..")
 
 		for _, de := range entries {
 			path := filepath.Clean(filepath.Join(path, de.Name()))
-
-			ino, ok := w.inodes[path]
-			if !ok {
-				return nil, 0, fmt.Errorf("failed to find inode for path %q", path)
-			}
-
-			var nid uint32
-			switch ino := ino.(type) {
-			case InodeCompact:
-				nid = ino.Ino
-			case InodeExtended:
-				nid = ino.Ino
-			default:
-				return nil, 0, fmt.Errorf("unsupported inode type %T", ino)
+			nid, err := w.findInodeAtPath(path)
+			if err != nil {
+				return nil, 0, fmt.Errorf("failed to find inode for path %q: %w", path, err)
 			}
 
 			dirents = append(dirents, Dirent{
-				Nid:      uint64(nid),
+				Nid:      nid,
 				FileType: uint8(fileTypeFromFileMode(de.Type())),
 			})
 			names = append(names, de.Name())
@@ -411,6 +424,27 @@ func (w *writer) dataForInode(path string, ino any) (io.ReadCloser, int64, error
 	default:
 		return nil, 0, fmt.Errorf("unsupported file type %o", mode&S_IFMT)
 	}
+}
+
+func (w *writer) findInodeAtPath(path string) (uint64, error) {
+	cleanPath := filepath.Clean(path)
+
+	ino, ok := w.inodes[cleanPath]
+	if !ok {
+		return 0, fmt.Errorf("failed to find inode for path %q", path)
+	}
+
+	var nid uint32
+	switch ino := ino.(type) {
+	case InodeCompact:
+		nid = ino.Ino
+	case InodeExtended:
+		nid = ino.Ino
+	default:
+		return 0, fmt.Errorf("unsupported inode type %T", ino)
+	}
+
+	return uint64(nid), nil
 }
 
 func toInode(fi fs.FileInfo, nlink int, allRoot bool) any {
