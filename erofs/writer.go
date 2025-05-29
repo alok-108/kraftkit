@@ -12,7 +12,6 @@ package erofs
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -35,7 +34,7 @@ const (
 
 // Create creates an EROFS filesystem image from the source filesystem and writes
 // it to the destination writer.
-func Create(dst io.WriterAt, src fs.FS) error {
+func Create(dst io.WriterAt, src fs.FS, allRoot bool) error {
 	w := &writer{
 		src: src,
 		dst: dst,
@@ -317,10 +316,6 @@ func (w *writer) populateInodes() error {
 }
 
 func (w *writer) dataForInode(path string, ino any) (io.ReadCloser, int64, error) {
-	type readLinkFS interface {
-		ReadLink(name string) (string, error)
-	}
-
 	var mode uint16
 	switch ino := ino.(type) {
 	case InodeCompact:
@@ -391,11 +386,10 @@ func (w *writer) dataForInode(path string, ino any) (io.ReadCloser, int64, error
 		}
 
 		return io.NopCloser(bytes.NewReader(buf)), int64(len(buf)), nil
-
 	case S_IFLNK:
-		fsys, ok := w.src.(readLinkFS)
+		fsys, ok := w.src.(fs.ReadLinkFS)
 		if !ok {
-			return nil, 0, errors.New("source filesystem must implement readLinkFS")
+			return nil, 0, fmt.Errorf("source filesystem must implement readLinkFS")
 		}
 
 		target, err := fsys.ReadLink(path)
