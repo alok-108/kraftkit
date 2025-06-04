@@ -16,12 +16,12 @@ type InitrdOptions struct {
 	workdir    string
 }
 
-// Whether the resulting CPIO archive file should be compressed.
+// Whether the resulting archive file should be compressed. (CPIO only)
 func (opts InitrdOptions) Compress() bool {
 	return opts.compress
 }
 
-// The output location of the resulting CPIO archive file.
+// The output location of the resulting archive file.
 func (opts InitrdOptions) Output() string {
 	return opts.output
 }
@@ -43,7 +43,8 @@ func (opts InitrdOptions) Workdir() string {
 
 type InitrdOption func(*InitrdOptions) error
 
-// WithCompression sets the compression of the resulting CPIO archive file.
+// WithCompression sets the compression of the resulting archive file.
+// (CPIO only)
 func WithCompression(compress bool) InitrdOption {
 	return func(opts *InitrdOptions) error {
 		opts.compress = compress
@@ -81,8 +82,7 @@ func WithKeepOwners(keep bool) InitrdOption {
 	}
 }
 
-// WithOutput sets the location of the output location of the resulting CPIO
-// archive file.
+// WithOutput sets the location of the resulting archive file.
 func WithOutput(output string) InitrdOption {
 	return func(opts *InitrdOptions) error {
 		opts.output = output
@@ -90,7 +90,7 @@ func WithOutput(output string) InitrdOption {
 	}
 }
 
-// WithType sets the filesystem type of the resulting CPIO archive file.
+// WithType sets the filesystem type of the resulting archive file.
 func WithType(fsType FsType) InitrdOption {
 	return func(opts *InitrdOptions) error {
 		opts.fsType = fsType
