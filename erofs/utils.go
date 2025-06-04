@@ -10,8 +10,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/anchore/stereoscope"
 	scfile "github.com/anchore/stereoscope/pkg/file"
@@ -21,19 +23,29 @@ import (
 	"kraftkit.sh/log"
 )
 
+type fInfo struct {
+	uid  int
+	gid  int
+	mode fs.FileMode
+}
+
 // unpackTarFileToDirectory extracts the contents of a tar file to a temporary
 // directory and returns the path to that directory. It handles directories,
 // regular files, symlinks, and hard links.
-func unpackTarFileToDirectory(ctx context.Context, source string) (string, error) {
+func unpackTarFileToDirectory(ctx context.Context, source string) (string, map[string]fInfo, error) {
+	fInfoMap := make(map[string]fInfo)
+
+	log.G(ctx).Info("unpacking tar file")
+
 	file, err := os.Open(source)
 	if err != nil {
-		return "", fmt.Errorf("could not open tar file: %w", err)
+		return "", nil, fmt.Errorf("could not open tar file: %w", err)
 	}
 	defer file.Close()
 
 	targetDir, err := os.MkdirTemp(os.TempDir(), "kraftkit-untar-")
 	if err != nil {
-		return "", fmt.Errorf("could not create temporary directory: %w", err)
+		return "", nil, fmt.Errorf("could not create temporary directory: %w", err)
 	}
 
 	var tarReader *tar.Reader
@@ -54,7 +66,7 @@ func unpackTarFileToDirectory(ctx context.Context, source string) (string, error
 			break // End of tar archive
 		}
 		if err != nil {
-			return "", err
+			return "", nil, err
 		}
 
 		// Construct the target file path
@@ -64,33 +76,28 @@ func unpackTarFileToDirectory(ctx context.Context, source string) (string, error
 		case tar.TypeDir:
 			// Create directory
 			if err := os.MkdirAll(targetPath, 0o755); err != nil {
-				return "", err
+				return "", nil, err
 			}
 		case tar.TypeReg:
 			// Create parent directory if necessary (optional)
 			if err := os.MkdirAll(filepath.Dir(targetPath), 0o755); err != nil {
-				return "", err
+				return "", nil, err
 			}
 
 			// Create and write the file
 			outFile, err := os.OpenFile(targetPath, os.O_CREATE|os.O_WRONLY, 0o644)
 			if err != nil {
-				return "", err
+				return "", nil, err
 			}
 			if _, err := io.Copy(outFile, tarReader); err != nil {
 				outFile.Close()
-				return "", err
+				return "", nil, err
 			}
 			outFile.Close()
-
-			// Set file permissions
-			if err := os.Chmod(targetPath, os.FileMode(header.Mode)); err != nil {
-				return "", fmt.Errorf("could not set permissions for %s: %w", targetPath, err)
-			}
 		case tar.TypeSymlink:
 			// Create a symlink
 			if err := os.Symlink(header.Linkname, targetPath); err != nil {
-				return "", fmt.Errorf("could not create symlink from %s to %s: %w", targetPath, header.Linkname, err)
+				return "", nil, fmt.Errorf("could not create symlink from %s to %s: %w", targetPath, header.Linkname, err)
 			}
 		case tar.TypeLink:
 			// Link needs to point to exact file
@@ -98,27 +105,41 @@ func unpackTarFileToDirectory(ctx context.Context, source string) (string, error
 
 			// Create a hard link
 			if err := os.Link(linkPath, targetPath); err != nil {
-				return "", fmt.Errorf("could not create hard link from %s to %s: %w", targetPath, linkPath, err)
+				return "", nil, fmt.Errorf("could not create hard link from %s to %s: %w", targetPath, linkPath, err)
 			}
 		default:
 			log.G(ctx).Warnf("Skipping unsupported file type: %c in %s", header.Typeflag, header.Name)
 			continue
 		}
+
+		if !strings.HasPrefix(header.Name, "/") {
+			header.Name = filepath.Join("/", header.Name)
+		}
+
+		fInfoMap[header.Name] = fInfo{
+			uid:  header.Uid,
+			gid:  header.Gid,
+			mode: fs.FileMode(header.Mode),
+		}
 	}
 
-	return targetDir, nil
+	return targetDir, fInfoMap, nil
 }
 
-func unpackOCIImageToDirectory(ctx context.Context, source string) (string, error) {
+func unpackOCIImageToDirectory(ctx context.Context, source string) (string, map[string]fInfo, error) {
+	fInfoMap := make(map[string]fInfo)
+
+	log.G(ctx).Info("unpacking oci image")
+
 	image, err := stereoscope.GetImage(ctx, source)
 	if err != nil {
-		return "", fmt.Errorf("could not load image: %w", err)
+		return "", nil, fmt.Errorf("could not load image: %w", err)
 	}
 
 	// Create a temporary directory to unpack the image
 	targetDir, err := os.MkdirTemp(os.TempDir(), "kraftkit-oci-")
 	if err != nil {
-		return "", fmt.Errorf("could not create temporary directory: %w", err)
+		return "", nil, fmt.Errorf("could not create temporary directory: %w", err)
 	}
 
 	if err := image.SquashedTree().Walk(func(path scfile.Path, f filenode.FileNode) error {
@@ -176,9 +197,7 @@ func unpackOCIImageToDirectory(ctx context.Context, source string) (string, erro
 				WithField("link", info.LinkDestination).
 				Trace("hardlinking")
 
-			// TODO unsure
 			dest := filepath.Join(targetDir, info.LinkDestination)
-
 			if err := os.Link(dest, fpath); err != nil {
 				return fmt.Errorf("could not create symlink %s: %w", fpath, err)
 			}
@@ -206,10 +225,6 @@ func unpackOCIImageToDirectory(ctx context.Context, source string) (string, erro
 			if err := dfile.Close(); err != nil {
 				return fmt.Errorf("could not close file %s: %w", fpath, err)
 			}
-
-			if err := os.Chmod(fpath, info.Mode().Perm()); err != nil {
-				return fmt.Errorf("could not chmod file or directory %s: %w", fpath, err)
-			}
 		case scfile.TypeDirectory:
 			log.G(ctx).
 				WithField("dst", fpath).
@@ -226,6 +241,17 @@ func unpackOCIImageToDirectory(ctx context.Context, source string) (string, erro
 				Warn("unsupported file type")
 			return nil
 		}
+
+		if !strings.HasPrefix(info.Path, "/") {
+			info.Path = filepath.Join("/", info.Path)
+		}
+
+		fInfoMap[info.Path] = fInfo{
+			uid:  info.UserID,
+			gid:  info.GroupID,
+			mode: info.Mode(),
+		}
+
 		return nil
 	}, &filetree.WalkConditions{
 		LinkOptions: []filetree.LinkResolutionOption{},
@@ -233,10 +259,10 @@ func unpackOCIImageToDirectory(ctx context.Context, source string) (string, erro
 			return f.LinkPath == ""
 		},
 	}); err != nil {
-		return "", fmt.Errorf("could not walk image: %w", err)
+		return "", nil, fmt.Errorf("could not walk image: %w", err)
 	}
 
-	return targetDir, nil
+	return targetDir, fInfoMap, nil
 }
 
 // IsErofsFile checks if the given file is an EROFS filesystem.

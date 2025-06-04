@@ -387,7 +387,23 @@ func (w *writer) populateInodes() error {
 			}
 		}
 
-		w.inodes[path] = toInode(fi, nlink, w.opts.allRoot)
+		var originalFInfo *fInfo
+		if w.opts.fInfoMap != nil {
+			// DirFS believes this is the root directory, so we set as such
+			toCheckForName := filepath.Join("/", path)
+
+			if filepath.Base(path) == ".." {
+				toCheckForName = filepath.Dir(filepath.Dir(path))
+			} else if filepath.Base(path) == "." {
+				toCheckForName = filepath.Dir(path)
+			}
+
+			if finfo, ok := w.opts.fInfoMap[toCheckForName]; ok {
+				originalFInfo = &finfo
+			}
+		}
+
+		w.inodes[path] = toInode(fi, nlink, w.opts.allRoot, originalFInfo)
 		w.inodeOrder = append(w.inodeOrder, path)
 
 		return nil
@@ -524,11 +540,20 @@ func (w *writer) findInodeAtPath(path string) (uint64, error) {
 	return uint64(nid), nil
 }
 
-func toInode(fi fs.FileInfo, nlink int, allRoot bool) any {
+func toInode(fi fs.FileInfo, nlink int, allRoot bool, originalFInfo *fInfo) any {
 	var uid, gid int
+	mode := fi.Mode()
 
-	// If allRoot is true, we set the UID and GID to 0 (root).
-	if !allRoot {
+	switch {
+	case allRoot:
+		uid, gid = 0, 0
+	case originalFInfo != nil:
+		uid = originalFInfo.uid
+		gid = originalFInfo.gid
+
+		// Clear permission bits from 'mode' and set the ones from originalFInfo.mode
+		mode = mode&^fs.ModePerm | originalFInfo.mode.Perm()
+	default:
 		uid, gid = getOwner(fi)
 	}
 
@@ -540,7 +565,7 @@ func toInode(fi fs.FileInfo, nlink int, allRoot bool) any {
 	if compact {
 		return InodeCompact{
 			Format: setBits(0, InodeLayoutCompact, InodeLayoutBit, InodeLayoutBits),
-			Mode:   statModeFromFileMode(fi.Mode()),
+			Mode:   statModeFromFileMode(mode),
 			Nlink:  uint16(nlink),
 			UID:    uint16(uid),
 			GID:    uint16(gid),
@@ -549,7 +574,7 @@ func toInode(fi fs.FileInfo, nlink int, allRoot bool) any {
 
 	return InodeExtended{
 		Format:    setBits(0, InodeLayoutExtended, InodeLayoutBit, InodeLayoutBits),
-		Mode:      statModeFromFileMode(fi.Mode()),
+		Mode:      statModeFromFileMode(mode),
 		Nlink:     uint32(nlink),
 		UID:       uint32(uid),
 		GID:       uint32(gid),

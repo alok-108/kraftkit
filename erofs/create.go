@@ -11,6 +11,7 @@ import (
 	"os"
 
 	archive "kraftkit.sh/cpio"
+	"kraftkit.sh/log"
 )
 
 type createOptions struct{}
@@ -54,11 +55,13 @@ func CreateFS(ctx context.Context, output string, source string, opts ...ErofsCr
 
 // CreateFSFromOCIImage creates an EroFS filesystem from an OCI image.
 func (c *createOptions) CreateFSFromOCIImage(ctx context.Context, writer *os.File, source string, opts ...ErofsCreateOption) error {
-	source, err := unpackOCIImageToDirectory(ctx, source)
+	source, fInfoMap, err := unpackOCIImageToDirectory(ctx, source)
 	if err != nil {
 		return fmt.Errorf("could not unpack OCI file: %w", err)
 	}
 	defer os.RemoveAll(source)
+
+	opts = append(opts, withFileInfoMap(fInfoMap))
 
 	if err := c.CreateFSFromDirectory(ctx, writer, source, opts...); err != nil {
 		return fmt.Errorf("could not create EroFS archive from directory: %w", err)
@@ -69,16 +72,19 @@ func (c *createOptions) CreateFSFromOCIImage(ctx context.Context, writer *os.Fil
 
 // CreateFSFromDirectory creates an EroFS filesystem from a directory.
 func (c *createOptions) CreateFSFromDirectory(ctx context.Context, writer *os.File, source string, opts ...ErofsCreateOption) error {
+	log.G(ctx).Info("creating EroFS archive")
 	return Create(io.WriterAt(writer), os.DirFS(source), opts...)
 }
 
 // CreateFSFromTarFile creates an EroFS filesystem from a tar file.
 func (c *createOptions) CreateFSFromTarFile(ctx context.Context, writer *os.File, source string, opts ...ErofsCreateOption) error {
-	source, err := unpackTarFileToDirectory(ctx, source)
+	source, fInfoMap, err := unpackTarFileToDirectory(ctx, source)
 	if err != nil {
 		return fmt.Errorf("could not unpack tar file: %w", err)
 	}
 	defer os.RemoveAll(source)
+
+	opts = append(opts, withFileInfoMap(fInfoMap))
 
 	if err := c.CreateFSFromDirectory(ctx, writer, source, opts...); err != nil {
 		return fmt.Errorf("could not create EroFS archive from directory: %w", err)
@@ -95,6 +101,8 @@ func (c *createOptions) CreateFSFromErofs(ctx context.Context, writer *os.File, 
 		return fmt.Errorf("could not open EroFS source file: %w", err)
 	}
 	defer f.Close()
+
+	log.G(ctx).Info("creating EroFS archive")
 
 	_, err = io.Copy(writer, f)
 	if err != nil {

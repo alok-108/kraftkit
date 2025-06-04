@@ -5,7 +5,13 @@
 package erofs
 
 type ErofsCreateOptions struct {
+	// allRoot indicates whether all files in the Erofs archive should be
+	// set to root:root (uid 0, gid 0) with default mode, regardless of the original
 	allRoot bool
+
+	// Map of file information for each file in the Erofs archive
+	// This is used to set the uid, gid, and mode for each file.
+	fInfoMap map[string]fInfo
 }
 
 type ErofsCreateOption func(*ErofsCreateOptions) error
@@ -15,6 +21,15 @@ type ErofsCreateOption func(*ErofsCreateOptions) error
 func WithAllRoot(allRoot bool) ErofsCreateOption {
 	return func(eo *ErofsCreateOptions) error {
 		eo.allRoot = allRoot
+		return nil
+	}
+}
+
+// withFileInfoMap sets the file information map for the Erofs archive.
+// This should not be used externally.
+func withFileInfoMap(fInfoMap map[string]fInfo) ErofsCreateOption {
+	return func(eo *ErofsCreateOptions) error {
+		eo.fInfoMap = fInfoMap
 		return nil
 	}
 }
