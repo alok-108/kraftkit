@@ -238,6 +238,7 @@ func TestEROFS(t *testing.T) {
 func TestEROFSCreate(t *testing.T) {
 	input := "testdata/testfs.erofs"
 	output := "testdata/testfs-test.erofs"
+	inputFS := "testdata/testfs.tar.gz"
 
 	inputFile, err := os.Open(input)
 	require.NoError(t, err)
@@ -245,22 +246,18 @@ func TestEROFSCreate(t *testing.T) {
 		require.NoError(t, inputFile.Close())
 	})
 
-	outputFile, err := os.Create(output)
-	require.NoError(t, err)
+	err = erofs.CreateFS(t.Context(), output, inputFS, erofs.WithAllRoot(true))
 	t.Cleanup(func() {
 		require.NoError(t, os.Remove(output))
 	})
-
-	err = erofs.Create(outputFile, os.DirFS("testdata/testfs"), erofs.WithAllRoot(true))
 	require.NoError(t, err)
-	require.NoError(t, outputFile.Close())
 
 	// Original file as created by `mkfs.erofs`
 	refSys, err := erofs.Open(inputFile)
 	require.NoError(t, err)
 
 	// Created file as created by `erofs.Create`
-	outputFile, err = os.Open(output)
+	outputFile, err := os.Open(output)
 	require.NoError(t, err)
 	testSys, err := erofs.Open(outputFile)
 	require.NoError(t, err)

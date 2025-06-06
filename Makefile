@@ -269,9 +269,7 @@ test: test-unit test-framework test-e2e test-cloud-e2e ## Run all tests.
 test-unit: GOTEST_EXCLUDE := third_party/ test/ hack/ buildenvs/ dist/ docs/ tools/
 test-unit: GOTEST_PKGS := $(foreach pkg,$(filter-out $(GOTEST_EXCLUDE),$(wildcard */)),$(pkg)...)
 test-unit: ## Run unit tests.
-	tar xpzf $(WORKDIR)/erofs/testdata/testfs.tar.gz -C $(WORKDIR)/erofs/testdata
 	$(GINKGO) -v -p -randomize-all -tags "containers_image_storage_stub,containers_image_openpgp,osusergo,netgo" $(GOTEST_PKGS)
-	rm -rf $(WORKDIR)/erofs/testdata/testfs
 
 .PHONY: test-e2e
 test-e2e: kraft ## Run CLI end-to-end tests.

@@ -14,12 +14,17 @@ import (
 	"kraftkit.sh/initrd"
 )
 
-func TestNewFromDockerfile(t *testing.T) {
+func TestNewFromDockerfileToCPIO(t *testing.T) {
 	const rootfsDockerfile = "testdata/rootfs.Dockerfile"
 
 	ctx := context.Background()
 
-	ird, err := initrd.NewFromDockerfile(ctx, rootfsDockerfile)
+	ird, err := initrd.NewFromDockerfile(
+		ctx,
+		rootfsDockerfile,
+		initrd.WithArchitecture("x86_64"),
+		initrd.WithType(initrd.FsTypeCpio),
+	)
 	if err != nil {
 		t.Fatal("NewFromDockerfile:", err)
 	}

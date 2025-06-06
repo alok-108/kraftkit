@@ -15,12 +15,17 @@ import (
 	"kraftkit.sh/initrd"
 )
 
-func TestNewFromTarball(t *testing.T) {
+func TestNewFromTarballToCPIO(t *testing.T) {
 	const rootfsTarball = "testdata/rootfs.tar.gz"
 
 	ctx := context.Background()
 
-	ird, err := initrd.NewFromTarball(ctx, rootfsTarball)
+	ird, err := initrd.NewFromTarball(
+		ctx,
+		rootfsTarball,
+		initrd.WithArchitecture("x86_64"),
+		initrd.WithType(initrd.FsTypeCpio),
+	)
 	if err != nil {
 		t.Fatal("NewFromTarball:", err)
 	}

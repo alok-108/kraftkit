@@ -15,14 +15,19 @@ import (
 	"kraftkit.sh/initrd"
 )
 
-func TestNewFromDirectory(t *testing.T) {
+func TestNewFromDirectoryToCPIO(t *testing.T) {
 	if err := archive.Unarchive("testdata/rootfs.tar.gz", "testdata/rootfs"); err != nil {
 		t.Fatal("Unarchive:", err)
 	}
 
 	ctx := context.Background()
 
-	ird, err := initrd.NewFromDirectory(ctx, "testdata/rootfs")
+	ird, err := initrd.NewFromDirectory(
+		ctx,
+		"testdata/rootfs",
+		initrd.WithArchitecture("x86_64"),
+		initrd.WithType(initrd.FsTypeCpio),
+	)
 	if err != nil {
 		t.Fatal("NewFromDirectory:", err)
 	}
