@@ -216,8 +216,8 @@ $(addprefix $(.PROXY), $(TOOLS)): TAGS += xen
 endif
 $(addprefix $(.PROXY), $(TOOLS)): TAGS += containers_image_storage_stub
 $(addprefix $(.PROXY), $(TOOLS)): TAGS += containers_image_openpgp
-$(addprefix $(.PROXY), $(BIN)): TAGS += netgo
-$(addprefix $(.PROXY), $(BIN)): TAGS += osusergo
+$(addprefix $(.PROXY), $(TOOLS)): TAGS += netgo
+$(addprefix $(.PROXY), $(TOOLS)): TAGS += osusergo
 $(addprefix $(.PROXY), $(TOOLS)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.version=$(VERSION)"
 $(addprefix $(.PROXY), $(TOOLS)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.commit=$(GIT_SHA)"
 $(addprefix $(.PROXY), $(TOOLS)): GO_LDFLAGS += -X "$(GOMOD)/internal/version.buildTime=$(shell date)"
