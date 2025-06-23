@@ -19,7 +19,7 @@ require (
 	github.com/cli/go-gh/v2 v2.12.1
 	github.com/cli/safeexec v1.0.1
 	github.com/compose-spec/compose-go v1.20.2
-	github.com/compose-spec/compose-go/v2 v2.6.4
+	github.com/compose-spec/compose-go/v2 v2.6.5
 	github.com/containerd/containerd v1.7.27
 	github.com/containerd/errdefs v1.0.0
 	github.com/containerd/log v0.1.0
@@ -243,6 +243,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rootless-containers/rootlesskit v1.1.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.1 // indirect
 	github.com/sasha-s/go-deadlock v0.3.5 // indirect
 	github.com/scylladb/go-set v1.0.3-0.20200225121959-cc7b2070d91e // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0 // indirect
