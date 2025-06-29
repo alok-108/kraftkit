@@ -8,7 +8,7 @@ require (
 	github.com/LastPossum/kamino v0.0.2
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/Masterminds/semver v1.5.0
-	github.com/Masterminds/semver/v3 v3.3.1
+	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/acorn-io/baaah v0.0.0-20230522221318-afcc93619e30
 	github.com/anchore/stereoscope v0.1.5
 	github.com/briandowns/spinner v1.23.2
