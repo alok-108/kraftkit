@@ -520,6 +520,10 @@ func (app *application) MakeArgs(ctx context.Context, tc target.Target) (*core.M
 }
 
 func (app *application) Make(ctx context.Context, tc target.Target, mopts ...make.MakeOption) error {
+	if app.unikraft == nil {
+		return fmt.Errorf("application has no unikraft configuration")
+	}
+
 	mopts = append(mopts,
 		make.WithDirectory(app.unikraft.Path()),
 		make.WithNoPrintDirectory(true),
