@@ -75,7 +75,11 @@ func NewApplicationFromInterface(ctx context.Context, iface map[string]interface
 			app.command = []string{v}
 		case []interface{}:
 			for _, cmd := range v {
-				app.command = append(app.command, cmd.(string))
+				cmdString, ok := cmd.(string)
+				if !ok {
+					return nil, errors.New("cmd must be a string or a list of strings")
+				}
+				app.command = append(app.command, cmdString)
 			}
 		}
 	}
