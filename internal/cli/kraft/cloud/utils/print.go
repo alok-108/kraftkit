@@ -619,7 +619,7 @@ func PrintInstancesTemplates(ctx context.Context, format string, resp kcclient.S
 
 		if format != "table" {
 			table.AddField(humanize.IBytes(uint64(template.MemoryMB)*humanize.MiByte), nil)
-			table.AddField(string(template.Vcpus), nil)
+			table.AddField(strconv.FormatInt(int64(template.Vcpus), 10), nil)
 
 			envs := []string{}
 			for k, v := range template.Env {
