@@ -111,10 +111,18 @@ func NewApplicationFromInterface(ctx context.Context, iface map[string]interface
 		return nil, err
 	}
 
-	if err := Transform(ctx, getSectionMap(iface, "libraries"), &app.libraries); err != nil {
+	librariesSectionMap := getSectionMap(iface, "libraries")
+	if librariesSectionMap == nil {
+		return nil, errors.New("libraries section must be a mapping")
+	}
+	if err := Transform(ctx, librariesSectionMap, &app.libraries); err != nil {
 		return nil, err
 	}
 
+	targetsSectionList := getSectionList(iface, "targets")
+	if targetsSectionList == nil {
+		return nil, errors.New("targets section must be a list")
+	}
 	if err := Transform(ctx, getSectionList(iface, "targets"), &app.targets); err != nil {
 		return nil, err
 	}
@@ -146,12 +154,20 @@ func getSectionMap(config map[string]interface{}, key string) map[string]interfa
 		return make(map[string]interface{})
 	}
 
+	if _, ok := section.(map[string]interface{}); !ok {
+		return nil
+	}
+
 	return section.(map[string]interface{})
 }
 
 func getSectionList(config map[string]interface{}, key string) []interface{} {
 	section, ok := config[key]
 	if !ok {
+		return make([]interface{}, 0)
+	}
+
+	if _, ok := section.([]interface{}); !ok {
 		return nil
 	}
 
