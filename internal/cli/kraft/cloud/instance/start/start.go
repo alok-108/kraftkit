@@ -124,8 +124,19 @@ func Start(ctx context.Context, opts *StartOptions, args ...string) error {
 	if err != nil {
 		return fmt.Errorf("starting instance: %w", err)
 	}
-	if _, err = resp.FirstOrErr(); err != nil {
-		return fmt.Errorf("starting instance: %w", err)
+	startResponses, err := resp.AllOrErr()
+
+	totalStarted := 0
+	for _, started := range startResponses {
+		if started.Status == "success" {
+			totalStarted++
+		}
+	}
+
+	log.G(ctx).Infof("started %d instance(s)", totalStarted)
+
+	if err != nil {
+		return fmt.Errorf("starting %d instance(s): %w", len(args), err)
 	}
 
 	return nil

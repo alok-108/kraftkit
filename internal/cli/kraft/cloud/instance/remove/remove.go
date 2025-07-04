@@ -154,13 +154,7 @@ func Remove(ctx context.Context, opts *RemoveOptions, args ...string) error {
 			uuids = stoppedUuids
 		}
 
-		log.G(ctx).Infof("removing %d instance(s)", len(uuids))
-
-		if _, err := opts.Client.Instances().WithMetro(opts.Metro).Delete(ctx, uuids...); err != nil {
-			return fmt.Errorf("removing %d instance(s): %w", len(uuids), err)
-		}
-
-		return nil
+		args = uuids
 	}
 
 	log.G(ctx).Infof("removing %d instance(s)", len(args))
@@ -169,7 +163,18 @@ func Remove(ctx context.Context, opts *RemoveOptions, args ...string) error {
 	if err != nil {
 		return fmt.Errorf("removing %d instance(s): %w", len(args), err)
 	}
-	if _, err := resp.AllOrErr(); err != nil {
+	deleteResponses, err := resp.AllOrErr()
+
+	totalDeleted := 0
+	for _, deleted := range deleteResponses {
+		if deleted.Status == "success" {
+			totalDeleted++
+		}
+	}
+
+	log.G(ctx).Infof("removed %d instance(s)", totalDeleted)
+
+	if err != nil {
 		return fmt.Errorf("removing %d instance(s): %w", len(args), err)
 	}
 

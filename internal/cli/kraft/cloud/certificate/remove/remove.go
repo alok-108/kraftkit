@@ -107,21 +107,12 @@ func (opts *RemoveOptions) Run(ctx context.Context, args []string) error {
 			return nil
 		}
 
-		log.G(ctx).Infof("removing %d certificate(s)", len(certList))
-
 		uuids := make([]string, 0, len(certList))
 		for _, certItem := range certList {
 			uuids = append(uuids, certItem.UUID)
 		}
 
-		delResp, err := client.WithMetro(opts.metro).Delete(ctx, uuids...)
-		if err != nil {
-			return fmt.Errorf("removing %d certificate(s): %w", len(uuids), err)
-		}
-		if _, err = delResp.AllOrErr(); err != nil {
-			return fmt.Errorf("removing %d certificate(s): %w", len(uuids), err)
-		}
-		return nil
+		args = uuids
 	}
 
 	log.G(ctx).Infof("removing %d certificate(s)", len(args))
@@ -130,7 +121,18 @@ func (opts *RemoveOptions) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return fmt.Errorf("removing %d certificate(s): %w", len(args), err)
 	}
-	if _, err = delResp.AllOrErr(); err != nil {
+	deleteResponses, err := delResp.AllOrErr()
+
+	totalDeleted := 0
+	for _, deleted := range deleteResponses {
+		if deleted.Status == "success" {
+			totalDeleted++
+		}
+	}
+
+	log.G(ctx).Infof("removed %d certificate(s)", totalDeleted)
+
+	if err != nil {
 		return fmt.Errorf("removing %d certificate(s): %w", len(args), err)
 	}
 

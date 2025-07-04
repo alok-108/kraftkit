@@ -258,7 +258,18 @@ func Remove(ctx context.Context, opts *RemoveOptions, args ...string) error {
 	if err != nil {
 		return fmt.Errorf("removing %d service(s): %w", len(args), err)
 	}
-	if _, err := resp.AllOrErr(); err != nil {
+	deleteResponses, err := resp.AllOrErr()
+
+	totalDeleted := 0
+	for _, deleted := range deleteResponses {
+		if deleted.Status == "success" {
+			totalDeleted++
+		}
+	}
+
+	log.G(ctx).Infof("removed %d service(s)", totalDeleted)
+
+	if err != nil {
 		return fmt.Errorf("removing %d service(s): %w", len(args), err)
 	}
 

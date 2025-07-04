@@ -117,13 +117,7 @@ func (opts *RemoveOptions) Run(ctx context.Context, args []string) error {
 			uuids = append(uuids, vol.UUID)
 		}
 
-		log.G(ctx).Infof("removing %d instance template(s)", len(uuids))
-
-		if _, err := opts.Client.Instances().WithMetro(opts.Metro).DeleteTemplate(ctx, uuids...); err != nil {
-			return fmt.Errorf("removing %d instance template(s): %w", len(uuids), err)
-		}
-
-		return nil
+		args = uuids
 	}
 
 	log.G(ctx).Infof("removing %d instance template(s)", len(args))
@@ -132,8 +126,19 @@ func (opts *RemoveOptions) Run(ctx context.Context, args []string) error {
 	if err != nil {
 		return fmt.Errorf("deleting %d instance template(s): %w", len(args), err)
 	}
-	if _, err = delResp.AllOrErr(); err != nil {
-		return fmt.Errorf("deleting %d instance template(s): %w", len(args), err)
+	deleteResponses, err := delResp.AllOrErr()
+
+	totalDeleted := 0
+	for _, deleted := range deleteResponses {
+		if deleted.Status == "success" {
+			totalDeleted++
+		}
+	}
+
+	log.G(ctx).Infof("removed %d instance template(s)", totalDeleted)
+
+	if err != nil {
+		return fmt.Errorf("removing %d instance  template(s): %w", len(args), err)
 	}
 
 	return nil
