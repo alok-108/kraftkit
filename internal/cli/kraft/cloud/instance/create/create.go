@@ -148,11 +148,15 @@ func Create(ctx context.Context, opts *CreateOptions, args ...string) (*kcclient
 					for {
 						imageResp, err := opts.Client.Images().WithMetro(opts.Metro).Get(ctx, opts.Image)
 						if err != nil {
-							continue
+							return fmt.Errorf("could not get image: %w", err)
 						}
 
 						image, err = imageResp.FirstOrErr()
-						if err != nil || image == nil {
+						if err != nil {
+							return fmt.Errorf("could not get image: %w", err)
+						}
+
+						if image == nil {
 							continue
 						}
 
