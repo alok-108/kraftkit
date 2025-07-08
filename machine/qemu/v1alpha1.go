@@ -20,7 +20,7 @@ import (
 
 	zip "api.zip"
 	"github.com/acorn-io/baaah/pkg/merr"
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 	goprocess "github.com/shirou/gopsutil/v3/process"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
