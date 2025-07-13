@@ -22,12 +22,13 @@ import (
 )
 
 type RemoveOptions struct {
-	Auth    *config.AuthConfig    `noattribute:"true"`
-	Client  kraftcloud.KraftCloud `noattribute:"true"`
-	All     bool                  `long:"all" short:"a" usage:"Remove all instances"`
-	Stopped bool                  `long:"stopped" short:"s" usage:"Remove all stopped instances"`
-	Metro   string                `noattribute:"true"`
-	Token   string                `noattribute:"true"`
+	AllowInsecure bool                  `noattribute:"true"`
+	Auth          *config.AuthConfig    `noattribute:"true"`
+	Client        kraftcloud.KraftCloud `noattribute:"true"`
+	All           bool                  `long:"all" short:"a" usage:"Remove all instances"`
+	Stopped       bool                  `long:"stopped" short:"s" usage:"Remove all stopped instances"`
+	Metro         string                `noattribute:"true"`
+	Token         string                `noattribute:"true"`
 }
 
 func NewCmd() *cobra.Command {
@@ -67,7 +68,7 @@ func NewCmd() *cobra.Command {
 }
 
 func (opts *RemoveOptions) Pre(cmd *cobra.Command, args []string) error {
-	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token)
+	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token, &opts.AllowInsecure)
 	if err != nil {
 		return fmt.Errorf("could not populate metro and token: %w", err)
 	}
@@ -105,6 +106,7 @@ func Remove(ctx context.Context, opts *RemoveOptions, args ...string) error {
 
 	if opts.Client == nil {
 		opts.Client = kraftcloud.NewClient(
+			kraftcloud.WithAllowInsecure(opts.AllowInsecure),
 			kraftcloud.WithToken(config.GetKraftCloudTokenAuthConfig(*opts.Auth)),
 		)
 	}

@@ -23,13 +23,14 @@ import (
 )
 
 type RemoveOptions struct {
-	All       bool                  `long:"all" short:"a" usage:"Remove all services"`
-	Auth      *config.AuthConfig    `noattribute:"true"`
-	Client    kraftcloud.KraftCloud `noattribute:"true"`
-	Drain     bool                  `long:"drain" short:"D" usage:"Remove all instances within the service"`
-	Metro     string                `noattribute:"true"`
-	Token     string                `noattribute:"true"`
-	WaitEmpty bool                  `long:"wait-empty" usage:"Wait for the service to be empty before removing it"`
+	AllowInsecure bool                  `noattribute:"true"`
+	All           bool                  `long:"all" short:"a" usage:"Remove all services"`
+	Auth          *config.AuthConfig    `noattribute:"true"`
+	Client        kraftcloud.KraftCloud `noattribute:"true"`
+	Drain         bool                  `long:"drain" short:"D" usage:"Remove all instances within the service"`
+	Metro         string                `noattribute:"true"`
+	Token         string                `noattribute:"true"`
+	WaitEmpty     bool                  `long:"wait-empty" usage:"Wait for the service to be empty before removing it"`
 }
 
 func NewCmd() *cobra.Command {
@@ -67,7 +68,7 @@ func (opts *RemoveOptions) Pre(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("either specify an instance name or UUID, or use the --all flag")
 	}
 
-	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token)
+	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token, &opts.AllowInsecure)
 	if err != nil {
 		return fmt.Errorf("could not populate metro and token: %w", err)
 	}
@@ -95,6 +96,7 @@ func Remove(ctx context.Context, opts *RemoveOptions, args ...string) error {
 
 	if opts.Client == nil {
 		opts.Client = kraftcloud.NewClient(
+			kraftcloud.WithAllowInsecure(opts.AllowInsecure),
 			kraftcloud.WithToken(config.GetKraftCloudTokenAuthConfig(*opts.Auth)),
 		)
 	}

@@ -26,14 +26,15 @@ import (
 )
 
 type CreateOptions struct {
-	Auth   *config.AuthConfig                 `noattribute:"true"`
-	Client kccertificates.CertificatesService `noattribute:"true"`
-	Metro  string                             `noattribute:"true"`
-	Chain  string                             `local:"true" long:"chain" short:"C" usage:"The chain of the certificate"`
-	CN     string                             `local:"true" long:"cn" short:"c" usage:"The common name of the certificate"`
-	Name   string                             `local:"true" size:"name" short:"n" usage:"The name of the certificate"`
-	PKey   string                             `local:"true" long:"pkey" short:"p" usage:"The private key of the certificate in PEM format"`
-	Token  string                             `noattribute:"true"`
+	Auth          *config.AuthConfig                 `noattribute:"true"`
+	Client        kccertificates.CertificatesService `noattribute:"true"`
+	Metro         string                             `noattribute:"true"`
+	Chain         string                             `local:"true" long:"chain" short:"C" usage:"The chain of the certificate"`
+	CN            string                             `local:"true" long:"cn" short:"c" usage:"The common name of the certificate"`
+	Name          string                             `local:"true" size:"name" short:"n" usage:"The name of the certificate"`
+	PKey          string                             `local:"true" long:"pkey" short:"p" usage:"The private key of the certificate in PEM format"`
+	Token         string                             `noattribute:"true"`
+	allowInsecure bool
 }
 
 func isValidChain(chain []byte) error {
@@ -87,6 +88,7 @@ func Create(ctx context.Context, opts *CreateOptions) (*kccertificates.CreateRes
 
 	if opts.Client == nil {
 		opts.Client = kraftcloud.NewCertificatesClient(
+			kraftcloud.WithAllowInsecure(opts.allowInsecure),
 			kraftcloud.WithToken(config.GetKraftCloudTokenAuthConfig(*opts.Auth)),
 		)
 	}
@@ -181,7 +183,7 @@ func (opts *CreateOptions) Pre(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("chain is required")
 	}
 
-	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token)
+	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token, &opts.allowInsecure)
 	if err != nil {
 		return fmt.Errorf("could not populate metro and token: %w", err)
 	}

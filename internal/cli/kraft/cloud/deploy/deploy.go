@@ -34,6 +34,7 @@ import (
 )
 
 type DeployOptions struct {
+	AllowInsecure       bool                           `noattribute:"true"`
 	Auth                *config.AuthConfig             `noattribute:"true"`
 	Client              kraftcloud.KraftCloud          `noattribute:"true"`
 	Certificate         []string                       `local:"true" long:"certificate" short:"C" usage:"Set the certificates to use for the service"`
@@ -169,7 +170,7 @@ func NewCmd() *cobra.Command {
 }
 
 func (opts *DeployOptions) Pre(cmd *cobra.Command, _ []string) error {
-	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token)
+	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token, &opts.AllowInsecure)
 	if err != nil {
 		return fmt.Errorf("could not populate metro and token: %w", err)
 	}
@@ -212,6 +213,7 @@ func (opts *DeployOptions) Run(ctx context.Context, args []string) error {
 	}
 
 	opts.Client = kraftcloud.NewClient(
+		kraftcloud.WithAllowInsecure(opts.AllowInsecure),
 		kraftcloud.WithToken(config.GetKraftCloudTokenAuthConfig(*opts.Auth)),
 	)
 

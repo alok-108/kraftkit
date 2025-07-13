@@ -28,13 +28,14 @@ import (
 )
 
 type LogOptions struct {
-	Auth     *config.AuthConfig    `noattribute:"true"`
-	Client   kraftcloud.KraftCloud `noattribute:"true"`
-	Follow   bool                  `local:"true" long:"follow" short:"f" usage:"Follow the logs of the instance every half second" default:"false"`
-	Metro    string                `noattribute:"true"`
-	NoPrefix bool                  `long:"no-prefix" usage:"When logging multiple machines, do not prefix each log line with the name"`
-	Tail     int                   `local:"true" long:"tail" short:"n" usage:"Show the last given lines from the logs" default:"-1"`
-	Token    string                `noattribute:"true"`
+	AllowInsecure bool                  `noattribute:"true"`
+	Auth          *config.AuthConfig    `noattribute:"true"`
+	Client        kraftcloud.KraftCloud `noattribute:"true"`
+	Follow        bool                  `local:"true" long:"follow" short:"f" usage:"Follow the logs of the instance every half second" default:"false"`
+	Metro         string                `noattribute:"true"`
+	NoPrefix      bool                  `long:"no-prefix" usage:"When logging multiple machines, do not prefix each log line with the name"`
+	Tail          int                   `local:"true" long:"tail" short:"n" usage:"Show the last given lines from the logs" default:"-1"`
+	Token         string                `noattribute:"true"`
 }
 
 // Log retrieves the console output from a KraftCloud instance.
@@ -83,7 +84,7 @@ func NewCmd() *cobra.Command {
 }
 
 func (opts *LogOptions) Pre(cmd *cobra.Command, _ []string) error {
-	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token)
+	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token, &opts.AllowInsecure)
 	if err != nil {
 		return fmt.Errorf("could not populate metro and token: %w", err)
 	}
@@ -111,6 +112,7 @@ func Logs(ctx context.Context, opts *LogOptions, args ...string) error {
 
 	if opts.Client == nil {
 		opts.Client = kraftcloud.NewClient(
+			kraftcloud.WithAllowInsecure(opts.AllowInsecure),
 			kraftcloud.WithToken(config.GetKraftCloudTokenAuthConfig(*opts.Auth)),
 		)
 	}

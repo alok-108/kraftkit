@@ -22,15 +22,16 @@ import (
 )
 
 type AddOptions struct {
-	Adjustment string                `long:"adjustment" short:"a" usage:"The adjustment of the policy. Valid options: 'percent', 'absolute', 'change'" default:"change"`
-	Auth       *config.AuthConfig    `noattribute:"true"`
-	Client     kraftcloud.KraftCloud `noattribute:"true"`
-	Metric     string                `long:"metric" short:"m" usage:"The metric of the policy. Valid options: 'cpu'" default:"cpu"`
-	Metro      string                `noattribute:"true"`
-	Name       string                `long:"name" short:"n" usage:"The name of the policy"`
-	Type       string                `long:"type" short:"t" usage:"The type of the policy. Valid options: 'step'/'on_demand'" default:"step"`
-	Step       []string              `long:"step" short:"s" usage:"The step of the policy in the format 'LOWER_BOUND:UPPER_BOUND/ADJUSTMENT'"`
-	Token      string                `noattribute:"true"`
+	AllowInsecure bool                  `noattribute:"true"`
+	Adjustment    string                `long:"adjustment" short:"a" usage:"The adjustment of the policy. Valid options: 'percent', 'absolute', 'change'" default:"change"`
+	Auth          *config.AuthConfig    `noattribute:"true"`
+	Client        kraftcloud.KraftCloud `noattribute:"true"`
+	Metric        string                `long:"metric" short:"m" usage:"The metric of the policy. Valid options: 'cpu'" default:"cpu"`
+	Metro         string                `noattribute:"true"`
+	Name          string                `long:"name" short:"n" usage:"The name of the policy"`
+	Type          string                `long:"type" short:"t" usage:"The type of the policy. Valid options: 'step'/'on_demand'" default:"step"`
+	Step          []string              `long:"step" short:"s" usage:"The step of the policy in the format 'LOWER_BOUND:UPPER_BOUND/ADJUSTMENT'"`
+	Token         string                `noattribute:"true"`
 }
 
 // stepFormat holds the step format of the policy for parsing.
@@ -72,7 +73,7 @@ func (opts *AddOptions) Pre(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("specify a configuration UUID or NAME")
 	}
 
-	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token)
+	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token, &opts.AllowInsecure)
 	if err != nil {
 		return fmt.Errorf("could not populate metro and token: %w", err)
 	}
@@ -100,6 +101,7 @@ func (opts *AddOptions) Run(ctx context.Context, args []string) error {
 
 	if opts.Client == nil {
 		opts.Client = kraftcloud.NewClient(
+			kraftcloud.WithAllowInsecure(opts.AllowInsecure),
 			kraftcloud.WithToken(config.GetKraftCloudTokenAuthConfig(*opts.Auth)),
 		)
 	}
