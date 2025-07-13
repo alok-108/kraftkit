@@ -19,14 +19,6 @@ type file struct {
 // NewFromFile accepts an input file which already represents a CPIO archive and
 // is provided as a mechanism for satisfying the Initrd interface.
 func NewFromFile(_ context.Context, path string, opts ...InitrdOption) (Initrd, error) {
-	stat, err := os.Stat(path)
-	if err != nil {
-		return nil, err
-	}
-	if stat.IsDir() {
-		return nil, fmt.Errorf("path %s is a directory, not a file", path)
-	}
-
 	initrd := file{
 		opts: InitrdOptions{},
 		path: path,
@@ -40,6 +32,14 @@ func NewFromFile(_ context.Context, path string, opts ...InitrdOption) (Initrd, 
 
 	if !filepath.IsAbs(initrd.path) {
 		initrd.path = filepath.Join(initrd.opts.workdir, initrd.path)
+	}
+
+	stat, err := os.Stat(initrd.path)
+	if err != nil {
+		return nil, err
+	}
+	if stat.IsDir() {
+		return nil, fmt.Errorf("path %s is a directory, not a file", initrd.path)
 	}
 
 	absDest, err := filepath.Abs(filepath.Clean(initrd.opts.output))
