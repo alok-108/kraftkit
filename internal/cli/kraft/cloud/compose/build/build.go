@@ -213,8 +213,8 @@ func Build(ctx context.Context, opts *BuildOptions, args ...string) error {
 			)
 			if err != nil && errors.Is(err, app.ErrNoKraftfile) {
 				runtime, err := runtime.NewRuntime(ctx, runtime.DefaultKraftCloudRuntime,
-					runtime.WithPlatform(project.Targets()[0].Platform().String()),
-					runtime.WithArchitecture(project.Targets()[0].Architecture().String()),
+					runtime.WithPlatform(target.DefaultKraftCloudTarget.Platform().String()),
+					runtime.WithArchitecture(target.DefaultKraftCloudTarget.Architecture().String()),
 				)
 				if err != nil {
 					return fmt.Errorf("could not create runtime: %w", err)
