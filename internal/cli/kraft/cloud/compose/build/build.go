@@ -219,13 +219,19 @@ func Build(ctx context.Context, opts *BuildOptions, args ...string) error {
 				if err != nil {
 					return fmt.Errorf("could not create runtime: %w", err)
 				}
+				var rootfs string
+				if filepath.IsAbs(service.Build.Dockerfile) {
+					rootfs = service.Build.Dockerfile
+				} else {
+					rootfs = filepath.Join(service.Build.Context, service.Build.Dockerfile)
+				}
 				project, err = app.NewApplicationFromOptions(
 					app.WithRuntime(runtime),
 					app.WithName(appName),
 					app.WithTargets([]*target.TargetConfig{target.DefaultKraftCloudTarget}),
 					app.WithCommand(service.Command...),
 					app.WithWorkingDir(service.Build.Context),
-					app.WithRootfs(filepath.Join(service.Build.Context, service.Build.Dockerfile)),
+					app.WithRootfs(rootfs),
 				)
 				if err != nil {
 					return fmt.Errorf("could not create unikernel application: %w", err)
@@ -237,7 +243,12 @@ func Build(ctx context.Context, opts *BuildOptions, args ...string) error {
 			// Only set the supplied dockerfile as the rootfs if it exists, this is
 			// because the contents of `service.Build.Dockerfile` is supplied with a
 			// default value even if a Dockerfile does not actually exist.
-			rootfs := filepath.Join(service.Build.Context, service.Build.Dockerfile)
+			var rootfs string
+			if filepath.IsAbs(service.Build.Dockerfile) {
+				rootfs = service.Build.Dockerfile
+			} else {
+				rootfs = filepath.Join(service.Build.Context, service.Build.Dockerfile)
+			}
 			if _, err := os.Stat(rootfs); err == nil {
 				bopts.Rootfs = rootfs
 				popts.Rootfs = rootfs
