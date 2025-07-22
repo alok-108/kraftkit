@@ -355,6 +355,7 @@ func Up(ctx context.Context, opts *UpOptions, args ...string) error {
 		}
 
 		instResp, _, err = create.Create(ctx, &create.CreateOptions{
+			AllowInsecure:    opts.AllowInsecure,
 			Auth:             opts.Auth,
 			Client:           opts.Client,
 			Domain:           domains,

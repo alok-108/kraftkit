@@ -122,6 +122,7 @@ func (deployer *deployerKraftfileRuntime) Deploy(ctx context.Context, opts *Depl
 	}
 
 	return create.Create(ctx, &create.CreateOptions{
+		AllowInsecure:       opts.AllowInsecure,
 		Certificate:         opts.Certificate,
 		Env:                 opts.Env,
 		Domain:              opts.Domain,
