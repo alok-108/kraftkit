@@ -34,9 +34,10 @@ import (
 )
 
 type ImportOptions struct {
-	Auth  *config.AuthConfig `noattribute:"true"`
-	Token string             `noattribute:"true"`
-	Metro string             `noattribute:"true"`
+	AllowInsecure bool               `noattribute:"true"`
+	Auth          *config.AuthConfig `noattribute:"true"`
+	Token         string             `noattribute:"true"`
+	Metro         string             `noattribute:"true"`
 
 	VolimportImage string `local:"true" long:"image" usage:"Volume import image to use" default:"official/utils/volimport:1.0"`
 	Port           int    `local:"true" long:"port" short:"p" usage:"Custom port to connect to the volume import service instance on" default:"42069"`
@@ -100,7 +101,7 @@ func (opts *ImportOptions) Pre(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("local source path must be a directory or a Dockerfile")
 	}
 
-	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token)
+	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token, &opts.AllowInsecure)
 	if err != nil {
 		return fmt.Errorf("could not populate metro and token: %w", err)
 	}
@@ -129,6 +130,7 @@ func (opts *ImportOptions) Run(ctx context.Context, _ []string) error {
 // importVolumeData imports local data to a volume.
 func importVolumeData(ctx context.Context, opts *ImportOptions) (retErr error) {
 	cli := kraftcloud.NewClient(
+		kraftcloud.WithAllowInsecure(opts.AllowInsecure),
 		kraftcloud.WithToken(config.GetKraftCloudTokenAuthConfig(*opts.Auth)),
 	)
 	icli := cli.Instances().WithMetro(opts.Metro)

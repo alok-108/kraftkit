@@ -21,11 +21,12 @@ import (
 )
 
 type RemoveOptions struct {
-	Auth   *config.AuthConfig    `noattribute:"true"`
-	Client kraftcloud.KraftCloud `noattribute:"true"`
-	All    bool                  `long:"all" short:"a" usage:"Remove all templates"`
-	Metro  string                `noattribute:"true"`
-	Token  string                `noattribute:"true"`
+	AllowInsecure bool                  `noattribute:"true"`
+	Auth          *config.AuthConfig    `noattribute:"true"`
+	Client        kraftcloud.KraftCloud `noattribute:"true"`
+	All           bool                  `long:"all" short:"a" usage:"Remove all templates"`
+	Metro         string                `noattribute:"true"`
+	Token         string                `noattribute:"true"`
 }
 
 // Remove a KraftCloud persistent volume.
@@ -68,7 +69,7 @@ func NewCmd() *cobra.Command {
 }
 
 func (opts *RemoveOptions) Pre(cmd *cobra.Command, _ []string) error {
-	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token)
+	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token, &opts.AllowInsecure)
 	if err != nil {
 		return fmt.Errorf("could not populate metro and token: %w", err)
 	}
@@ -92,6 +93,7 @@ func (opts *RemoveOptions) Run(ctx context.Context, args []string) error {
 
 	if opts.Client == nil {
 		opts.Client = kraftcloud.NewClient(
+			kraftcloud.WithAllowInsecure(opts.AllowInsecure),
 			kraftcloud.WithToken(config.GetKraftCloudTokenAuthConfig(*opts.Auth)),
 		)
 	}

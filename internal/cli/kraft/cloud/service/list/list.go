@@ -22,8 +22,9 @@ import (
 type ListOptions struct {
 	Output string `long:"output" short:"o" usage:"Set output format. Options: table,yaml,json,list,raw" default:"table"`
 
-	metro string
-	token string
+	metro         string
+	token         string
+	allowInsecure bool
 }
 
 func NewCmd() *cobra.Command {
@@ -51,7 +52,7 @@ func NewCmd() *cobra.Command {
 }
 
 func (opts *ListOptions) Pre(cmd *cobra.Command, _ []string) error {
-	err := utils.PopulateMetroToken(cmd, &opts.metro, &opts.token)
+	err := utils.PopulateMetroToken(cmd, &opts.metro, &opts.token, &opts.allowInsecure)
 	if err != nil {
 		return fmt.Errorf("could not populate metro and token: %w", err)
 	}
@@ -70,6 +71,7 @@ func (opts *ListOptions) Run(ctx context.Context, args []string) error {
 	}
 
 	client := kraftcloud.NewServicesClient(
+		kraftcloud.WithAllowInsecure(opts.allowInsecure),
 		kraftcloud.WithToken(config.GetKraftCloudTokenAuthConfig(*auth)),
 	)
 

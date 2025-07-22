@@ -33,15 +33,16 @@ import (
 )
 
 type BuildOptions struct {
-	Auth        *config.AuthConfig    `noattribute:"true"`
-	Client      kraftcloud.KraftCloud `noattribute:"true"`
-	Composefile string                `noattribute:"true"`
-	EnvFile     string                `noattribute:"true"`
-	Metro       string                `noattribute:"true"`
-	Project     *compose.Project      `noattribute:"true"`
-	Push        bool                  `long:"push" usage:"Push the built service images"`
-	Runtimes    []string              `long:"runtime" usage:"Alternative runtime to use when packaging a service"`
-	Token       string                `noattribute:"true"`
+	AllowInsecure bool                  `noattribute:"true"`
+	Auth          *config.AuthConfig    `noattribute:"true"`
+	Client        kraftcloud.KraftCloud `noattribute:"true"`
+	Composefile   string                `noattribute:"true"`
+	EnvFile       string                `noattribute:"true"`
+	Metro         string                `noattribute:"true"`
+	Project       *compose.Project      `noattribute:"true"`
+	Push          bool                  `long:"push" usage:"Push the built service images"`
+	Runtimes      []string              `long:"runtime" usage:"Alternative runtime to use when packaging a service"`
+	Token         string                `noattribute:"true"`
 }
 
 func NewCmd() *cobra.Command {
@@ -90,6 +91,7 @@ func Build(ctx context.Context, opts *BuildOptions, args ...string) error {
 
 	if opts.Client == nil {
 		opts.Client = kraftcloud.NewClient(
+			kraftcloud.WithAllowInsecure(opts.AllowInsecure),
 			kraftcloud.WithToken(config.GetKraftCloudTokenAuthConfig(*opts.Auth)),
 		)
 	}
@@ -328,7 +330,7 @@ func Build(ctx context.Context, opts *BuildOptions, args ...string) error {
 }
 
 func (opts *BuildOptions) Pre(cmd *cobra.Command, args []string) error {
-	if err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token); err != nil {
+	if err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token, &opts.AllowInsecure); err != nil {
 		return fmt.Errorf("could not populate metro and token: %w", err)
 	}
 

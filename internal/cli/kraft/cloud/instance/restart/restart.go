@@ -23,13 +23,14 @@ import (
 )
 
 type RestartOptions struct {
-	All    bool                  `long:"all" short:"a" usage:"restart all instances"`
-	Auth   *config.AuthConfig    `noattribute:"true"`
-	Client kraftcloud.KraftCloud `noattribute:"true"`
-	Force  bool                  `long:"force" short:"f" usage:"Force stop the instance(s)"`
-	Metro  string                `noattribute:"true"`
-	Token  string                `noattribute:"true"`
-	Wait   time.Duration         `local:"true" long:"wait" short:"w" usage:"Timeout to wait for the instance to stop and/or start (ms/s/m/h)"`
+	AllowInsecure bool                  `noattribute:"true"`
+	All           bool                  `long:"all" short:"a" usage:"restart all instances"`
+	Auth          *config.AuthConfig    `noattribute:"true"`
+	Client        kraftcloud.KraftCloud `noattribute:"true"`
+	Force         bool                  `long:"force" short:"f" usage:"Force stop the instance(s)"`
+	Metro         string                `noattribute:"true"`
+	Token         string                `noattribute:"true"`
+	Wait          time.Duration         `local:"true" long:"wait" short:"w" usage:"Timeout to wait for the instance to stop and/or start (ms/s/m/h)"`
 }
 
 func NewCmd() *cobra.Command {
@@ -63,7 +64,7 @@ func NewCmd() *cobra.Command {
 }
 
 func (opts *RestartOptions) Pre(cmd *cobra.Command, _ []string) error {
-	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token)
+	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token, &opts.AllowInsecure)
 	if err != nil {
 		return fmt.Errorf("could not populate Metro and Token: %w", err)
 	}
@@ -88,6 +89,7 @@ func Restart(ctx context.Context, opts *RestartOptions, args ...string) error {
 
 	if opts.Client == nil {
 		opts.Client = kraftcloud.NewClient(
+			kraftcloud.WithAllowInsecure(opts.AllowInsecure),
 			kraftcloud.WithToken(config.GetKraftCloudTokenAuthConfig(*opts.Auth)),
 		)
 	}

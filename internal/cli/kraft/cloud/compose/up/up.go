@@ -38,6 +38,7 @@ import (
 )
 
 type UpOptions struct {
+	AllowInsecure    bool                     `noattribute:"true"`
 	Auth             *config.AuthConfig       `noattribute:"true"`
 	Client           kraftcloud.KraftCloud    `noattribute:"true"`
 	Composefile      string                   `noattribute:"true"`
@@ -93,7 +94,7 @@ func NewCmd() *cobra.Command {
 }
 
 func (opts *UpOptions) Pre(cmd *cobra.Command, args []string) error {
-	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token)
+	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token, &opts.AllowInsecure)
 	if err != nil {
 		return fmt.Errorf("could not populate metro and token: %w", err)
 	}
@@ -132,6 +133,7 @@ func Up(ctx context.Context, opts *UpOptions, args ...string) error {
 
 	if opts.Client == nil {
 		opts.Client = kraftcloud.NewClient(
+			kraftcloud.WithAllowInsecure(opts.AllowInsecure),
 			kraftcloud.WithToken(config.GetKraftCloudTokenAuthConfig(*opts.Auth)),
 		)
 	}

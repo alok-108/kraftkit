@@ -28,8 +28,9 @@ import (
 )
 
 type CloudOptions struct {
-	Metro string `long:"metro" env:"UKC_METRO" usage:"Unikraft Cloud metro location"`
-	Token string `long:"token" env:"UKC_TOKEN" usage:"Unikraft Cloud access token"`
+	Metro         string `long:"metro" env:"UKC_METRO" usage:"Unikraft Cloud metro location"`
+	Token         string `long:"token" env:"UKC_TOKEN" usage:"Unikraft Cloud access token"`
+	AllowInsecure bool   `long:"allow-insecure" usage:"Allow insecure connections to the Unikraft Cloud API"`
 }
 
 func NewCmd() *cobra.Command {
