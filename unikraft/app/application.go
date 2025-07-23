@@ -582,6 +582,19 @@ func (app *application) Configure(ctx context.Context, tc target.Target, extra k
 		values.OverrideBy(extra)
 	}
 
+	if values.AnyYes("CONFIG_LIBPOSIX_VFS_FSTAB_EINITRD",
+		"CONFIG_LIBPOSIX_VFS_FSTAB_BUILTIN_EINITRD",
+		"CONFIG_LIBPOSIX_VFS_FSTAB_FALLBACK_EINITRD") &&
+		values.AllNoOrUnset("CONFIG_LIBPOSIX_VFS_FSTAB_EINITRD_PATH") {
+		values.Set(
+			"CONFIG_LIBPOSIX_VFS_FSTAB_EINITRD_PATH",
+			filepath.Join(
+				app.outDir,
+				fmt.Sprintf(initrd.DefaultInitramfsArchFileName, tc.Architecture().String()),
+			),
+		)
+	}
+
 	// Are we embedding an initramfs file into the kernel?
 	if values.AnyYes(
 		"CONFIG_LIBVFSCORE_FSTAB", // Deprecated
