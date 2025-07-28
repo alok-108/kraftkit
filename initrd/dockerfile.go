@@ -37,6 +37,7 @@ import (
 	"github.com/moby/buildkit/session/sshforward/sshprovider"
 	"github.com/moby/buildkit/util/progress/progressui"
 	"github.com/testcontainers/testcontainers-go"
+	tlog "github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	_ "github.com/moby/buildkit/client/connhelper/dockercontainer"
@@ -92,7 +93,7 @@ func init() {
 	}
 }
 
-var testcontainersLoggingHook = func(logger testcontainers.Logging) testcontainers.ContainerLifecycleHooks {
+var testcontainersLoggingHook = func(logger tlog.Logger) testcontainers.ContainerLifecycleHooks {
 	shortContainerID := func(c testcontainers.Container) string {
 		return c.GetContainerID()[:12]
 	}
@@ -119,7 +120,6 @@ var testcontainersLoggingHook = func(logger testcontainers.Logging) testcontaine
 		PostStarts: []testcontainers.ContainerHook{
 			func(ctx context.Context, c testcontainers.Container) error {
 				logger.Printf("container started: %s", shortContainerID(c))
-
 				return nil
 			},
 		},
@@ -302,7 +302,7 @@ func (initrd *dockerfile) Build(ctx context.Context) (string, error) {
 
 		testcontainers.DefaultLoggingHook = testcontainersLoggingHook
 		printf := &testcontainersPrintf{ctx}
-		testcontainers.Logger = printf
+		tlog.SetDefault(printf)
 
 		// Trap any errors with a helpful message for how to use buildkit
 		defer func() {
