@@ -19,7 +19,7 @@ require (
 	github.com/cli/go-gh/v2 v2.12.1
 	github.com/cli/safeexec v1.0.1
 	github.com/compose-spec/compose-go v1.20.2
-	github.com/compose-spec/compose-go/v2 v2.7.1
+	github.com/compose-spec/compose-go/v2 v2.8.1
 	github.com/containerd/containerd v1.7.28
 	github.com/containerd/errdefs v1.0.0
 	github.com/containerd/log v0.1.0
@@ -296,7 +296,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.6.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
-	go.yaml.in/yaml/v3 v3.0.3 // indirect
+	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.40.0 // indirect
 	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/text v0.27.0 // indirect
