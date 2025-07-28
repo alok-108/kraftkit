@@ -93,6 +93,7 @@ func (deployer *deployerImageName) Deploy(ctx context.Context, opts *DeployOptio
 			"",
 			func(ctx context.Context) error {
 				insts, groups, err = instancecreate.Create(ctx, &instancecreate.CreateOptions{
+					AllowInsecure:       opts.AllowInsecure,
 					Certificate:         opts.Certificate,
 					Entrypoint:          opts.Entrypoint,
 					Env:                 opts.Env,
