@@ -13,6 +13,7 @@ import (
 
 	"github.com/mattn/go-shellwords"
 	"kraftkit.sh/config"
+	"kraftkit.sh/initrd"
 	"kraftkit.sh/internal/cli/kraft/utils"
 	"kraftkit.sh/log"
 	"kraftkit.sh/pack"
@@ -332,7 +333,8 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 
 	var cmds []string
 	var envs []string
-	if _, cmds, envs, err = utils.BuildRootfs(ctx, opts.Workdir, opts.Rootfs, opts.Compress, targ.Architecture().String()); err != nil {
+	var packRootfs initrd.Initrd
+	if packRootfs, cmds, envs, err = utils.BuildRootfs(ctx, opts.Workdir, opts.Rootfs, opts.Compress, targ.Architecture().String()); err != nil {
 		return nil, fmt.Errorf("could not build rootfs: %w", err)
 	}
 
@@ -393,12 +395,24 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 			func(ctx context.Context) error {
 				popts := append(opts.packopts,
 					packmanager.PackArgs(args...),
-					packmanager.PackInitrd(opts.Rootfs),
-					packmanager.PackKConfig(!opts.NoKConfig),
+					packmanager.PackArchitecture(targ.Architecture()),
+					packmanager.PackPlatform(targ.Platform()),
 					packmanager.PackName(opts.Name),
 					packmanager.PackOutput(opts.Output),
 					packmanager.PackLabels(labels),
 				)
+
+				if packRootfs != nil {
+					popts = append(popts,
+						packmanager.PackInitrd(packRootfs),
+					)
+				}
+
+				if !opts.NoKConfig && targ.KConfig() != nil {
+					popts = append(popts,
+						packmanager.PackKConfig(targ.KConfig()),
+					)
+				}
 
 				if ukversion, ok := targ.KConfig().Get(unikraft.UK_FULLVERSION); ok {
 					popts = append(popts,
