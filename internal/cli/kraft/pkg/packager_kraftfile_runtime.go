@@ -332,7 +332,7 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 
 	var cmds []string
 	var envs []string
-	if opts.Rootfs, cmds, envs, err = utils.BuildRootfs(ctx, opts.Workdir, opts.Rootfs, opts.Compress, targ.Architecture().String()); err != nil {
+	if _, cmds, envs, err = utils.BuildRootfs(ctx, opts.Workdir, opts.Rootfs, opts.Compress, targ.Architecture().String()); err != nil {
 		return nil, fmt.Errorf("could not build rootfs: %w", err)
 	}
 
