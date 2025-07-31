@@ -284,6 +284,11 @@ func (initrd *tarball) Build(ctx context.Context) (string, error) {
 	return initrd.opts.output, nil
 }
 
+// Options implements Initrd.
+func (initrd *tarball) Options() InitrdOptions {
+	return initrd.opts
+}
+
 // Env implements Initrd.
 func (initrd *tarball) Env() []string {
 	return nil

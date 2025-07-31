@@ -338,6 +338,11 @@ func (initrd *ociimage) Build(ctx context.Context) (string, error) {
 	return initrd.opts.output, nil
 }
 
+// Options implements Initrd.
+func (initrd *ociimage) Options() InitrdOptions {
+	return initrd.opts
+}
+
 // Env implements Initrd.
 func (initrd *ociimage) Env() []string {
 	return initrd.env
