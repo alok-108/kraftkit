@@ -43,8 +43,8 @@ func (p *packagerKraftfileRuntime) Packagable(ctx context.Context, opts *PkgOpti
 		}
 	}
 
-	if opts.Project.Runtime() == nil && len(opts.Project.Rootfs()) == 0 {
-		return false, fmt.Errorf("cannot package without any of runtime or rootfs")
+	if opts.Project.Runtime() == nil && len(opts.Project.Rootfs()) == 0 && len(opts.Project.Roms()) == 0 {
+		return false, fmt.Errorf("cannot package without any of runtime, rootfs or roms")
 	}
 
 	if opts.Project.Rootfs() != "" && opts.Rootfs == "" {
@@ -65,6 +65,7 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 		packKConfig      kconfig.KeyValueMap
 		packCmds         []string
 		packEnv          []string
+		packRoms         []string
 		packArgs         []string
 		packRootfs       initrd.Initrd
 		packArchitecture arch.Architecture
@@ -411,6 +412,14 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 		}
 	}
 
+	if opts.Project != nil {
+		packRoms = opts.Project.Roms()
+	} else if len(opts.Roms) > 0 {
+		packRoms = opts.Roms
+	} else if targ != nil && len(targ.Roms()) > 0 {
+		packRoms = targ.Roms()
+	}
+
 	var labels map[string]string
 	if opts.Project != nil {
 		labels = opts.Project.Labels()
@@ -458,6 +467,12 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 				if packRootfs != nil {
 					popts = append(popts,
 						packmanager.PackInitrd(packRootfs),
+					)
+				}
+
+				if len(packRoms) > 0 {
+					popts = append(popts,
+						packmanager.PackRoms(packRoms...),
 					)
 				}
 

@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -70,6 +71,7 @@ type ociPackage struct {
 	kernel    string
 	kernelDbg string
 	initrd    initrd.Initrd
+	roms      []string
 	command   []string
 	env       []string
 	labels    map[string]string
@@ -98,6 +100,7 @@ func NewPackage(ctx context.Context, handle handler.Handler, opts ...packmanager
 		plat:      popts.Platform(),
 		kconfig:   popts.KConfig(),
 		initrd:    popts.Initrd(),
+		roms:      popts.Roms(),
 		kernel:    popts.Kernel(),
 		kernelDbg: popts.KernelDbg(),
 		command:   popts.Args(),
@@ -133,6 +136,7 @@ func NewPackageFromTarget(ctx context.Context, handle handler.Handler, targ targ
 		plat:      targ.Platform(),
 		kconfig:   targ.KConfig(),
 		initrd:    targ.Initrd(),
+		roms:      targ.Roms(),
 		kernel:    targ.Kernel(),
 		kernelDbg: targ.KernelDbg(),
 		command:   targ.Command(),
@@ -167,6 +171,9 @@ func NewPackageFromTarget(ctx context.Context, handle handler.Handler, targ targ
 	}
 	if ocipack.popts.Initrd() != nil {
 		ocipack.initrd = ocipack.popts.Initrd()
+	}
+	if len(ocipack.popts.Roms()) > 0 {
+		ocipack.roms = ocipack.popts.Roms()
 	}
 	if ocipack.popts.Kernel() != "" {
 		ocipack.kernel = ocipack.popts.Kernel()
@@ -383,6 +390,23 @@ func (ocipack *ociPackage) build(ctx context.Context) (*ociPackage, error) {
 		log.G(ctx).
 			WithField(k, v).
 			Trace("label")
+	}
+
+	// If the merge strategy is set to overwrite, we remove any existing
+	// ROMs from the manifest, as we are going to re-add them.
+	if ocipack.popts.MergeStrategy() == packmanager.StrategyOverwrite {
+		ocipack.manifest.layers = slices.DeleteFunc(ocipack.manifest.layers, func(layer *Layer) bool {
+			return layer.blob.desc.MediaType == MediaTypeRom
+		})
+	}
+
+	for _, rom := range ocipack.Roms() {
+		log.G(ctx).
+			WithField("rom", rom).
+			Trace("layer")
+		if err := ocipack.manifest.AddRom(ctx, rom); err != nil {
+			return nil, fmt.Errorf("could not add ROM '%s' to manifest: %w", rom, err)
+		}
 	}
 
 	if err := ocipack.index.AddManifest(ctx, ocipack.manifest); err != nil {
@@ -1047,6 +1071,11 @@ func (ocipack *ociPackage) KernelDbg() string {
 // Initrd implements unikraft.target.Target
 func (ocipack *ociPackage) Initrd() initrd.Initrd {
 	return ocipack.initrd
+}
+
+// Roms implements unikraft.target.Target
+func (ocipack *ociPackage) Roms() []string {
+	return ocipack.roms
 }
 
 // Command implements unikraft.target.Target

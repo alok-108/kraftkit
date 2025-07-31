@@ -64,6 +64,10 @@ type Application interface {
 	// as the root filesystem.  This can either be an initramdisk or a volume.
 	Rootfs() string
 
+	// Auxiliary read-only memory blobs.  Used for arbitrary data which are
+	// mounted at runtime.
+	Roms() []string
+
 	// SetRootfs sets the root filesystem path for the application to the given
 	// value path.
 	SetRootfs(string)
@@ -176,6 +180,7 @@ type application struct {
 	env           target.Env
 	command       []string
 	rootfs        string
+	roms          []string
 	kraftfile     *Kraftfile
 	configuration kconfig.KeyValueMap
 	extensions    component.Extensions
@@ -250,6 +255,10 @@ func (app *application) Targets() []target.Target {
 
 func (app *application) Rootfs() string {
 	return app.rootfs
+}
+
+func (app *application) Roms() []string {
+	return app.roms
 }
 
 func (app *application) SetRootfs(rootfs string) {

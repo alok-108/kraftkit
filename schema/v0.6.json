@@ -37,6 +37,11 @@
 
     "/^rootfs$/": { "type": ["string", "array"] },
 
+    "/^roms$/": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+
     "/^volumes$/": {
       "oneOf": [
         { "type": "string" },

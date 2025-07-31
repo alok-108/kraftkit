@@ -7,4 +7,5 @@ package oci
 const (
 	MediaTypeKernel = "application/vnd.unikraft.kernel.v1"
 	MediaTypeInitrd = "application/vnd.unikraft.initrd.v1"
+	MediaTypeRom    = "application/vnd.unikraft.rom.v1"
 )

@@ -69,6 +69,15 @@ func NewApplicationFromInterface(ctx context.Context, iface map[string]interface
 		}
 	}
 
+	romsSectionList := getSectionList(iface, "roms")
+	for _, rom := range romsSectionList {
+		romStr, ok := rom.(string)
+		if !ok {
+			return nil, errors.New("rom must be a string")
+		}
+		app.roms = append(app.roms, romStr)
+	}
+
 	if n, ok := iface["cmd"]; ok {
 		switch v := n.(type) {
 		case string:

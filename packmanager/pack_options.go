@@ -20,6 +20,7 @@ type PackOptions struct {
 	args           []string
 	env            []string
 	initrd         initrd.Initrd
+	roms           []string
 	kconfig        kconfig.KeyValueMap
 	kernel         string
 	kernelDbg      string
@@ -72,6 +73,11 @@ func (popts *PackOptions) Kernel() string {
 // Initrd returns the path of the initrd file that should be packaged.
 func (popts *PackOptions) Initrd() initrd.Initrd {
 	return popts.initrd
+}
+
+// Auxiliary read-only memory blobs.
+func (popts *PackOptions) Roms() []string {
+	return popts.roms
 }
 
 // KConfig returns whether the .config file should be packaged.
@@ -158,6 +164,13 @@ func PackKernel(kernel string) PackOption {
 func PackInitrd(rootfs initrd.Initrd) PackOption {
 	return func(popts *PackOptions) {
 		popts.initrd = rootfs
+	}
+}
+
+// PackRoms includes auxiliary read-only memory blobs in the package.
+func PackRoms(roms ...string) PackOption {
+	return func(popts *PackOptions) {
+		popts.roms = roms
 	}
 }
 
