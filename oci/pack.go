@@ -83,6 +83,45 @@ var (
 	_ target.Target = (*ociPackage)(nil)
 )
 
+// NewPackage creates a new package based on the provided options.
+func NewPackage(ctx context.Context, handle handler.Handler, opts ...packmanager.PackOption) (pack.Package, error) {
+	var err error
+
+	popts := packmanager.NewPackOptions()
+	for _, opt := range opts {
+		opt(popts)
+	}
+
+	// Initialize the ociPackage by copying over target.Target attributes
+	ocipack := ociPackage{
+		arch:      popts.Architecture(),
+		plat:      popts.Platform(),
+		kconfig:   popts.KConfig(),
+		initrd:    popts.Initrd(),
+		kernel:    popts.Kernel(),
+		kernelDbg: popts.KernelDbg(),
+		command:   popts.Args(),
+		env:       popts.Env(),
+		labels:    popts.Labels(),
+		handle:    handle,
+		popts:     popts,
+	}
+
+	if popts.Name() == "" {
+		return nil, fmt.Errorf("cannot create package without name")
+	}
+	ocipack.ref, err = name.ParseReference(
+		popts.Name(),
+		name.WithDefaultRegistry(DefaultRegistry),
+		name.WithDefaultTag(DefaultTag),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse image reference: %w", err)
+	}
+
+	return ocipack.build(ctx)
+}
+
 // NewPackageFromTarget generates an OCI implementation of the pack.Package
 // construct based on an input Application and options.
 func NewPackageFromTarget(ctx context.Context, handle handler.Handler, targ target.Target, opts ...packmanager.PackOption) (pack.Package, error) {
