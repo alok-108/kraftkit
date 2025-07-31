@@ -43,10 +43,6 @@ func (p *packagerKraftfileRuntime) Packagable(ctx context.Context, opts *PkgOpti
 		return false, fmt.Errorf("cannot package without unikraft core specification")
 	}
 
-	if opts.Project.Targets() == nil {
-		return false, fmt.Errorf("cannot package without project targets")
-	}
-
 	if opts.Project.Rootfs() != "" && opts.Rootfs == "" {
 		opts.Rootfs = opts.Project.Rootfs()
 	}
@@ -59,10 +55,6 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 	var err error
 	var targ target.Target
 	var runtimeName, runtimeVersion string
-
-	if opts.Project.Targets() == nil {
-		return nil, fmt.Errorf("cannot package without project targets")
-	}
 
 	if len(opts.Runtime) > 0 {
 		var ok bool
