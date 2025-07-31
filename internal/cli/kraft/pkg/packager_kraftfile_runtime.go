@@ -15,6 +15,7 @@ import (
 	"kraftkit.sh/config"
 	"kraftkit.sh/initrd"
 	"kraftkit.sh/internal/cli/kraft/utils"
+	"kraftkit.sh/kconfig"
 	"kraftkit.sh/log"
 	"kraftkit.sh/pack"
 	"kraftkit.sh/packmanager"
@@ -22,6 +23,8 @@ import (
 	"kraftkit.sh/tui/processtree"
 	"kraftkit.sh/tui/selection"
 	"kraftkit.sh/unikraft"
+	"kraftkit.sh/unikraft/arch"
+	"kraftkit.sh/unikraft/plat"
 	"kraftkit.sh/unikraft/target"
 )
 
@@ -40,8 +43,8 @@ func (p *packagerKraftfileRuntime) Packagable(ctx context.Context, opts *PkgOpti
 		}
 	}
 
-	if opts.Project.Runtime() == nil {
-		return false, fmt.Errorf("cannot package without unikraft core specification")
+	if opts.Project.Runtime() == nil && len(opts.Project.Rootfs()) == 0 {
+		return false, fmt.Errorf("cannot package without any of runtime or rootfs")
 	}
 
 	if opts.Project.Rootfs() != "" && opts.Rootfs == "" {
@@ -53,9 +56,20 @@ func (p *packagerKraftfileRuntime) Packagable(ctx context.Context, opts *PkgOpti
 
 // Pack implements packager.
 func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, args ...string) ([]pack.Package, error) {
-	var err error
-	var targ target.Target
-	var runtimeName, runtimeVersion string
+	var (
+		err              error
+		runtimeName      string
+		runtimeVersion   string
+		targ             target.Target
+		packKernel       string
+		packKConfig      kconfig.KeyValueMap
+		packCmds         []string
+		packEnv          []string
+		packArgs         []string
+		packRootfs       initrd.Initrd
+		packArchitecture arch.Architecture
+		packPlatform     plat.Platform
+	)
 
 	if len(opts.Runtime) > 0 {
 		var ok bool
@@ -63,11 +77,16 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 		if !ok {
 			runtimeVersion = "latest"
 		}
-	} else {
-		if opts.Project == nil || opts.Project.Runtime() == nil {
-			return nil, fmt.Errorf("cannot use runtime packager without a project runtime")
-		}
+	} else if opts.Project != nil && opts.Project.Runtime() != nil {
 		runtimeName = opts.Project.Runtime().Name()
+	} else if opts.Name != "" {
+		var ok bool
+		runtimeName, runtimeVersion, ok = strings.Cut(opts.Name, ":")
+		if !ok {
+			runtimeVersion = "latest"
+		}
+	} else {
+		return nil, fmt.Errorf("no name specified: ")
 	}
 
 	if opts.Platform == "kraftcloud" || (opts.Project.Runtime().Platform() != nil && opts.Project.Runtime().Platform().Name() == "kraftcloud") {
@@ -78,7 +97,10 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 
 	if opts.Project != nil {
 		targets = opts.Project.Targets()
-		runtimeVersion = opts.Project.Runtime().Version()
+
+		if opts.Project.Runtime() != nil {
+			runtimeVersion = opts.Project.Runtime().Version()
+		}
 	}
 
 	qopts := []packmanager.QueryOption{
@@ -180,7 +202,7 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 		return nil, err
 	}
 
-	if len(packs) == 0 {
+	if len(packs) == 0 && !opts.NoKernel {
 		if len(opts.Platform) > 0 && len(opts.Architecture) > 0 {
 			return nil, fmt.Errorf(
 				"could not find runtime '%s:%s' (%s/%s)",
@@ -262,103 +284,128 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 		}
 	}
 
-	runtime := *selected
-	pulled, _, _ := runtime.PulledAt(ctx)
+	if selected != nil {
+		runtime := *selected
+		pulled, _, _ := runtime.PulledAt(ctx)
 
-	// Temporarily save the runtime package.
-	if err := runtime.Save(ctx); err != nil {
-		return nil, fmt.Errorf("could not save runtime package: %w", err)
-	}
+		// Temporarily save the runtime package.
+		if err := runtime.Save(ctx); err != nil {
+			return nil, fmt.Errorf("could not save runtime package: %w", err)
+		}
 
-	// Remove the cached runtime package reference if it was not previously
-	// pulled.
-	if !pulled && opts.NoPull {
+		// Remove the cached runtime package reference if it was not previously
+		// pulled.
+		if !pulled && opts.NoPull {
+			defer func() {
+				if err := runtime.Delete(ctx); err != nil {
+					log.G(ctx).Tracef("could not delete intermediate runtime package: %s", err.Error())
+				}
+			}()
+		}
+
+		if !pulled && !opts.NoPull {
+			paramodel, err := paraprogress.NewParaProgress(
+				ctx,
+				[]*paraprogress.Process{paraprogress.NewProcess(
+					fmt.Sprintf("pulling %s", runtime.String()),
+					func(ctx context.Context, w func(progress float64)) error {
+						popts := []pack.PullOption{}
+						if log.LoggerTypeFromString(config.G[config.KraftKit](ctx).Log.Type) == log.FANCY {
+							popts = append(popts, pack.WithPullProgressFunc(w))
+						}
+
+						return runtime.Pull(
+							ctx,
+							popts...,
+						)
+					},
+				)},
+				paraprogress.IsParallel(false),
+				paraprogress.WithRenderer(
+					log.LoggerTypeFromString(config.G[config.KraftKit](ctx).Log.Type) != log.FANCY,
+				),
+				paraprogress.WithFailFast(true),
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			if err := paramodel.Start(); err != nil {
+				return nil, err
+			}
+		}
+
+		// Create a temporary directory we can use to store the artifacts from
+		// pulling and extracting the identified package.
+		tempDir, err := os.MkdirTemp("", "kraft-pkg-")
+		if err != nil {
+			return nil, fmt.Errorf("could not create temporary directory: %w", err)
+		}
+
 		defer func() {
-			if err := runtime.Delete(ctx); err != nil {
-				log.G(ctx).Tracef("could not delete intermediate runtime package: %s", err.Error())
+			if err := os.RemoveAll(tempDir); err != nil {
+				log.G(ctx).Debugf("could not delete temporary directory: %s", err.Error())
 			}
 		}()
-	}
 
-	if !pulled && !opts.NoPull {
-		paramodel, err := paraprogress.NewParaProgress(
-			ctx,
-			[]*paraprogress.Process{paraprogress.NewProcess(
-				fmt.Sprintf("pulling %s", runtime.String()),
-				func(ctx context.Context, w func(progress float64)) error {
-					popts := []pack.PullOption{}
-					if log.LoggerTypeFromString(config.G[config.KraftKit](ctx).Log.Type) == log.FANCY {
-						popts = append(popts, pack.WithPullProgressFunc(w))
-					}
+		// Crucially, the catalog should return an interface that also implements
+		// target.Target.  This demonstrates that the implementing package can
+		// resolve application kernels.
+		var ok bool
+		targ, ok = runtime.(target.Target)
+		if !ok {
+			return nil, fmt.Errorf("package does not convert to target")
+		}
 
-					return runtime.Pull(
-						ctx,
-						popts...,
-					)
-				},
-			)},
-			paraprogress.IsParallel(false),
-			paraprogress.WithRenderer(
-				log.LoggerTypeFromString(config.G[config.KraftKit](ctx).Log.Type) != log.FANCY,
-			),
-			paraprogress.WithFailFast(true),
+		opts.Platform = targ.Platform().Name()
+		opts.Architecture = targ.Architecture().Name()
+		packKernel = targ.Kernel()
+		packKConfig = targ.KConfig()
+		packArchitecture = targ.Architecture()
+		packPlatform = targ.Platform()
+	} else {
+		if len(opts.Platform) == 0 {
+			return nil, fmt.Errorf("no platform specified: required when no runtime is specified")
+		}
+		if len(opts.Architecture) == 0 {
+			return nil, fmt.Errorf("no architecture specified: required when no runtime is specified")
+		}
+
+		packArchitecture = arch.NewArchitectureFromOptions(
+			arch.WithName(opts.Architecture),
 		)
-		if err != nil {
-			return nil, err
-		}
+		packPlatform = plat.NewPlatformFromOptions(
+			plat.WithName(opts.Platform),
+		)
 
-		if err := paramodel.Start(); err != nil {
-			return nil, err
-		}
+		log.G(ctx).Warn("no kernel detected: packaging without - this may produce unexpected results")
 	}
 
-	// Create a temporary directory we can use to store the artifacts from
-	// pulling and extracting the identified package.
-	tempDir, err := os.MkdirTemp("", "kraft-pkg-")
-	if err != nil {
-		return nil, fmt.Errorf("could not create temporary directory: %w", err)
-	}
-
-	defer func() {
-		os.RemoveAll(tempDir)
-	}()
-
-	// Crucially, the catalog should return an interface that also implements
-	// target.Target.  This demonstrates that the implementing package can
-	// resolve application kernels.
-	targ, ok := runtime.(target.Target)
-	if !ok {
-		return nil, fmt.Errorf("package does not convert to target")
-	}
-
-	var cmds []string
-	var envs []string
-	var packRootfs initrd.Initrd
-	if packRootfs, cmds, envs, err = utils.BuildRootfs(ctx, opts.Workdir, opts.Rootfs, opts.Compress, targ.Architecture().String()); err != nil {
+	if packRootfs, packCmds, packEnv, err = utils.BuildRootfs(ctx, opts.Workdir, opts.Rootfs, opts.Compress, packArchitecture.String()); err != nil {
 		return nil, fmt.Errorf("could not build rootfs: %w", err)
 	}
 
-	if envs != nil {
-		opts.Env = append(opts.Env, envs...)
+	if packEnv != nil {
+		packEnv = append(opts.Env, packEnv...)
+	} else {
+		opts.Env = opts.Env
 	}
 
 	// If no arguments have been specified, use the ones which are default and
 	// that have been included in the package.
 	if len(opts.Args) == 0 {
 		if opts.Project != nil && len(opts.Project.Command()) > 0 {
-			opts.Args = opts.Project.Command()
-		} else if cmds != nil {
-			opts.Args = cmds
-		} else if len(targ.Command()) > 0 {
-			opts.Args = targ.Command()
+			packArgs = opts.Project.Command()
+		} else if packCmds != nil {
+			packArgs = packCmds
+		} else if targ != nil && len(targ.Command()) > 0 {
+			packArgs = targ.Command()
 		}
 	}
 
-	args = []string{}
-
 	// Only parse arguments if they have been provided.
-	if len(opts.Args) > 0 {
-		args, err = shellwords.Parse(fmt.Sprintf("'%s'", strings.Join(opts.Args, "' '")))
+	if len(packArgs) > 0 {
+		packArgs, err = shellwords.Parse(fmt.Sprintf("'%s'", strings.Join(packArgs, "' '")))
 		if err != nil {
 			return nil, err
 		}
@@ -391,16 +438,22 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 
 		processtree.NewProcessTreeItem(
 			"packaging "+opts.Name,
-			targ.Platform().Name()+"/"+targ.Architecture().Name(),
+			packPlatform.Name()+"/"+packArchitecture.Name(),
 			func(ctx context.Context) error {
 				popts := append(opts.packopts,
-					packmanager.PackArgs(args...),
-					packmanager.PackArchitecture(targ.Architecture()),
-					packmanager.PackPlatform(targ.Platform()),
+					packmanager.PackArgs(packArgs...),
+					packmanager.PackArchitecture(packArchitecture),
+					packmanager.PackPlatform(packPlatform),
 					packmanager.PackName(opts.Name),
 					packmanager.PackOutput(opts.Output),
 					packmanager.PackLabels(labels),
 				)
+
+				if len(packKernel) > 0 {
+					popts = append(popts,
+						packmanager.PackKernel(packKernel),
+					)
+				}
 
 				if packRootfs != nil {
 					popts = append(popts,
@@ -408,13 +461,13 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 					)
 				}
 
-				if !opts.NoKConfig && targ.KConfig() != nil {
+				if !opts.NoKConfig && packKConfig != nil {
 					popts = append(popts,
-						packmanager.PackKConfig(targ.KConfig()),
+						packmanager.PackKConfig(packKConfig),
 					)
 				}
 
-				if ukversion, ok := targ.KConfig().Get(unikraft.UK_FULLVERSION); ok {
+				if ukversion, ok := packKConfig.Get(unikraft.UK_FULLVERSION); ok {
 					popts = append(popts,
 						packmanager.PackWithKernelVersion(ukversion.Value),
 					)
