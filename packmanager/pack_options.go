@@ -7,20 +7,17 @@ package packmanager
 // PackOptions contains the list of options which can be set when packaging a
 // component.
 type PackOptions struct {
-	appSourceFiles                   bool
-	args                             []string
-	env                              []string
-	initrd                           string
-	kconfig                          bool
-	kernelDbg                        bool
-	kernelLibraryIntermediateObjects bool
-	kernelLibraryObjects             bool
-	kernelSourceFiles                bool
-	kernelVersion                    string
-	labels                           map[string]string
-	name                             string
-	output                           string
-	mergeStrategy                    MergeStrategy
+	appSourceFiles bool
+	args           []string
+	env            []string
+	initrd         string
+	kconfig        bool
+	kernelDbg      bool
+	kernelVersion  string
+	labels         map[string]string
+	name           string
+	output         string
+	mergeStrategy  MergeStrategy
 }
 
 // NewPackOptions returns an instantiated *NewPackOptions with default
@@ -60,22 +57,6 @@ func (popts *PackOptions) PackKConfig() bool {
 // PackKernelDbg returns return whether to package the debug kernel.
 func (popts *PackOptions) KernelDbg() bool {
 	return popts.kernelDbg
-}
-
-// PackKernelLibraryIntermediateObjects returns whether to package intermediate
-// kernel library object files.
-func (popts *PackOptions) PackKernelLibraryIntermediateObjects() bool {
-	return popts.kernelLibraryIntermediateObjects
-}
-
-// PackKernelLibraryObjects returns whether to package kernel library objects.
-func (popts *PackOptions) PackKernelLibraryObjects() bool {
-	return popts.kernelLibraryObjects
-}
-
-// PackKernelSourceFiles returns the whether to package kernel source files.
-func (popts *PackOptions) PackKernelSourceFiles() bool {
-	return popts.kernelSourceFiles
 }
 
 // KernelVersion returns the version of the kernel
@@ -138,30 +119,6 @@ func PackInitrd(initrd string) PackOption {
 func PackKernelDbg(dbg bool) PackOption {
 	return func(popts *PackOptions) {
 		popts.kernelDbg = dbg
-	}
-}
-
-// PackKernelLibraryIntermediateObjects marks to include intermediate library
-// object files, e.g. libnolibc/errno.o
-func PackKernelLibraryIntermediateObjects(pack bool) PackOption {
-	return func(popts *PackOptions) {
-		popts.kernelSourceFiles = pack
-	}
-}
-
-// PackKernelLibraryObjects marks to include library object files, e.g. nolibc.o
-func PackKernelLibraryObjects(pack bool) PackOption {
-	return func(popts *PackOptions) {
-		popts.kernelSourceFiles = pack
-	}
-}
-
-// PackKernelSourceFiles marks that all source files which make up the build
-// from the Unikraft build side are to be included.  Including these files will
-// enable a reproducible build.
-func PackKernelSourceFiles(pack bool) PackOption {
-	return func(popts *PackOptions) {
-		popts.kernelSourceFiles = pack
 	}
 }
 

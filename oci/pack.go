@@ -159,24 +159,6 @@ func NewPackageFromTarget(ctx context.Context, handle handler.Handler, targ targ
 		}
 	}
 
-	// TODO(nderjung): See below.
-
-	// if popts.PackKernelLibraryObjects() {
-	// 	log.G(ctx).Debug("including kernel library objects")
-	// }
-
-	// if popts.PackKernelLibraryIntermediateObjects() {
-	// 	log.G(ctx).Debug("including kernel library intermediate objects")
-	// }
-
-	// if popts.PackKernelSourceFiles() {
-	// 	log.G(ctx).Debug("including kernel source files")
-	// }
-
-	// if popts.PackAppSourceFiles() {
-	// 	log.G(ctx).Debug("including application source files")
-	// }
-
 	if ocipack.original != nil {
 		ocipack.manifest.config = ocipack.original.manifest.config
 	}
