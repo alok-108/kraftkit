@@ -28,7 +28,21 @@ import (
 	"kraftkit.sh/unikraft/target"
 )
 
-type packagerKraftfileRuntime struct{}
+type packagerKraftfileRuntime struct {
+	name    string
+	version string
+	target  target.Target
+
+	// Packaging options
+	kernel       string
+	kconfig      kconfig.KeyValueMap
+	args         []string
+	env          []string
+	roms         []string
+	rootfs       initrd.Initrd
+	architecture arch.Architecture
+	platform     plat.Platform
+}
 
 // String implements fmt.Stringer.
 func (p *packagerKraftfileRuntime) String() string {
@@ -56,42 +70,28 @@ func (p *packagerKraftfileRuntime) Packagable(ctx context.Context, opts *PkgOpti
 
 // Pack implements packager.
 func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, args ...string) ([]pack.Package, error) {
-	var (
-		err              error
-		runtimeName      string
-		runtimeVersion   string
-		targ             target.Target
-		packKernel       string
-		packKConfig      kconfig.KeyValueMap
-		packCmds         []string
-		packEnv          []string
-		packRoms         []string
-		packArgs         []string
-		packRootfs       initrd.Initrd
-		packArchitecture arch.Architecture
-		packPlatform     plat.Platform
-	)
+	var err error
 
 	if len(opts.Runtime) > 0 {
 		var ok bool
-		runtimeName, runtimeVersion, ok = strings.Cut(opts.Runtime, ":")
+		p.name, p.version, ok = strings.Cut(opts.Runtime, ":")
 		if !ok {
-			runtimeVersion = "latest"
+			p.version = "latest"
 		}
 	} else if opts.Project != nil && opts.Project.Runtime() != nil {
-		runtimeName = opts.Project.Runtime().Name()
+		p.name = opts.Project.Runtime().Name()
 	} else if opts.Name != "" {
 		var ok bool
-		runtimeName, runtimeVersion, ok = strings.Cut(opts.Name, ":")
+		p.name, p.version, ok = strings.Cut(opts.Name, ":")
 		if !ok {
-			runtimeVersion = "latest"
+			p.version = "latest"
 		}
 	} else {
 		return nil, fmt.Errorf("no name specified: ")
 	}
 
 	if opts.Platform == "kraftcloud" || (opts.Project.Runtime().Platform() != nil && opts.Project.Runtime().Platform().Name() == "kraftcloud") {
-		runtimeName = utils.RewrapAsKraftCloudPackage(runtimeName)
+		p.name = utils.RewrapAsKraftCloudPackage(p.name)
 	}
 
 	var targets []target.Target
@@ -100,17 +100,17 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 		targets = opts.Project.Targets()
 
 		if opts.Project.Runtime() != nil {
-			runtimeVersion = opts.Project.Runtime().Version()
+			p.version = opts.Project.Runtime().Version()
 		}
 	}
 
 	qopts := []packmanager.QueryOption{
-		packmanager.WithName(runtimeName),
-		packmanager.WithVersion(runtimeVersion),
+		packmanager.WithName(p.name),
+		packmanager.WithVersion(p.version),
 	}
 
 	if len(targets) == 1 {
-		targ = targets[0]
+		p.target = targets[0]
 	} else if len(targets) > 1 {
 		// Filter project targets by any provided CLI options
 		targets = target.Filter(
@@ -125,13 +125,13 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 			return nil, fmt.Errorf("could not detect any project targets based on plat=\"%s\" arch=\"%s\"", opts.Platform, opts.Architecture)
 
 		case len(targets) == 1:
-			targ = targets[0]
+			p.target = targets[0]
 
 		case config.G[config.KraftKit](ctx).NoPrompt && len(targets) > 1:
 			return nil, fmt.Errorf("could not determine what to run based on provided CLI arguments")
 
 		default:
-			targ, err = target.Select(targets)
+			p.target, err = target.Select(targets)
 			if err != nil {
 				return nil, fmt.Errorf("could not select target: %v", err)
 			}
@@ -142,16 +142,16 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 	var packs []pack.Package
 	var kconfigs []string
 
-	if targ != nil {
-		for _, kc := range targ.KConfig() {
+	if p.target != nil {
+		for _, kc := range p.target.KConfig() {
 			kconfigs = append(kconfigs, kc.String())
 		}
 
 		if opts.Platform == "" {
-			opts.Platform = targ.Platform().Name()
+			opts.Platform = p.target.Platform().Name()
 		}
 		if opts.Architecture == "" {
-			opts.Architecture = targ.Architecture().Name()
+			opts.Architecture = p.target.Architecture().Name()
 		}
 	}
 
@@ -168,8 +168,8 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 		processtree.NewProcessTreeItem(
 			fmt.Sprintf(
 				"searching for %s:%s",
-				runtimeName,
-				runtimeVersion,
+				p.name,
+				p.version,
 			),
 			"",
 			func(ctx context.Context) error {
@@ -207,30 +207,30 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 		if len(opts.Platform) > 0 && len(opts.Architecture) > 0 {
 			return nil, fmt.Errorf(
 				"could not find runtime '%s:%s' (%s/%s)",
-				runtimeName,
-				runtimeVersion,
+				p.name,
+				p.version,
 				opts.Platform,
 				opts.Architecture,
 			)
 		} else if len(opts.Architecture) > 0 {
 			return nil, fmt.Errorf(
 				"could not find runtime '%s:%s' with '%s' architecture",
-				runtimeName,
-				runtimeVersion,
+				p.name,
+				p.version,
 				opts.Architecture,
 			)
 		} else if len(opts.Platform) > 0 {
 			return nil, fmt.Errorf(
 				"could not find runtime '%s:%s' with '%s' platform",
-				runtimeName,
-				runtimeVersion,
+				p.name,
+				p.version,
 				opts.Platform,
 			)
 		} else {
 			return nil, fmt.Errorf(
 				"could not find runtime %s:%s",
-				runtimeName,
-				runtimeVersion,
+				p.name,
+				p.version,
 			)
 		}
 	} else if len(packs) == 1 {
@@ -238,7 +238,7 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 	} else if len(packs) > 1 {
 		// If a target has been previously selected, we can use this to filter the
 		// returned list of packages based on its platform and architecture.
-		if targ != nil {
+		if p.target != nil {
 			found := []pack.Package{}
 
 			for _, p := range packs {
@@ -252,7 +252,7 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 			// platform, prompt with available set of packages.
 			if len(found) == 0 {
 				if !config.G[config.KraftKit](ctx).NoPrompt {
-					log.G(ctx).Warnf("could not find package '%s:%s' based on %s/%s", runtimeName, opts.Project.Runtime().Version(), opts.Platform, opts.Architecture)
+					log.G(ctx).Warnf("could not find package '%s:%s' based on %s/%s", p.name, opts.Project.Runtime().Version(), opts.Platform, opts.Architecture)
 					p, err := selection.Select[pack.Package]("select alternative package with same name to continue", packs...)
 					if err != nil {
 						return nil, fmt.Errorf("could not select package: %w", err)
@@ -260,13 +260,13 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 
 					selected = p
 				} else {
-					return nil, fmt.Errorf("could not find package '%s:%s' based on %s/%s but %d others found but prompting has been disabled", runtimeName, opts.Project.Runtime().Version(), opts.Platform, opts.Architecture, len(packs))
+					return nil, fmt.Errorf("could not find package '%s:%s' based on %s/%s but %d others found but prompting has been disabled", p.name, opts.Project.Runtime().Version(), opts.Platform, opts.Architecture, len(packs))
 				}
 			} else if len(found) == 1 {
 				selected = &found[0]
 			} else { // > 1
 				if !config.G[config.KraftKit](ctx).NoPrompt {
-					log.G(ctx).Infof("found %d packages named '%s:%s' based on %s/%s", len(found), runtimeName, opts.Project.Runtime().Version(), opts.Platform, opts.Architecture)
+					log.G(ctx).Infof("found %d packages named '%s:%s' based on %s/%s", len(found), p.name, opts.Project.Runtime().Version(), opts.Platform, opts.Architecture)
 					p, err := selection.Select[pack.Package]("select package to continue", found...)
 					if err != nil {
 						return nil, fmt.Errorf("could not select package: %w", err)
@@ -274,7 +274,7 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 
 					selected = p
 				} else {
-					return nil, fmt.Errorf("found %d packages named '%s:%s' based on %s/%s but prompting has been disabled", len(found), runtimeName, opts.Project.Runtime().Version(), opts.Platform, opts.Architecture)
+					return nil, fmt.Errorf("found %d packages named '%s:%s' based on %s/%s but prompting has been disabled", len(found), p.name, opts.Project.Runtime().Version(), opts.Platform, opts.Architecture)
 				}
 			}
 		} else {
@@ -353,17 +353,17 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 		// target.Target.  This demonstrates that the implementing package can
 		// resolve application kernels.
 		var ok bool
-		targ, ok = runtime.(target.Target)
+		p.target, ok = runtime.(target.Target)
 		if !ok {
 			return nil, fmt.Errorf("package does not convert to target")
 		}
 
-		opts.Platform = targ.Platform().Name()
-		opts.Architecture = targ.Architecture().Name()
-		packKernel = targ.Kernel()
-		packKConfig = targ.KConfig()
-		packArchitecture = targ.Architecture()
-		packPlatform = targ.Platform()
+		opts.Platform = p.target.Platform().Name()
+		opts.Architecture = p.target.Architecture().Name()
+		p.kernel = p.target.Kernel()
+		p.kconfig = p.target.KConfig()
+		p.architecture = p.target.Architecture()
+		p.platform = p.target.Platform()
 	} else {
 		if len(opts.Platform) == 0 {
 			return nil, fmt.Errorf("no platform specified: required when no runtime is specified")
@@ -372,22 +372,23 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 			return nil, fmt.Errorf("no architecture specified: required when no runtime is specified")
 		}
 
-		packArchitecture = arch.NewArchitectureFromOptions(
+		p.architecture = arch.NewArchitectureFromOptions(
 			arch.WithName(opts.Architecture),
 		)
-		packPlatform = plat.NewPlatformFromOptions(
+		p.platform = plat.NewPlatformFromOptions(
 			plat.WithName(opts.Platform),
 		)
 
 		log.G(ctx).Warn("no kernel detected: packaging without - this may produce unexpected results")
 	}
 
-	if packRootfs, packCmds, packEnv, err = utils.BuildRootfs(ctx, opts.Workdir, opts.Rootfs, opts.Compress, packArchitecture.String()); err != nil {
+	var rootfsArgs []string
+	if p.rootfs, rootfsArgs, p.env, err = utils.BuildRootfs(ctx, opts.Workdir, opts.Rootfs, opts.Compress, p.architecture.String()); err != nil {
 		return nil, fmt.Errorf("could not build rootfs: %w", err)
 	}
 
-	if packEnv != nil {
-		packEnv = append(opts.Env, packEnv...)
+	if p.env != nil {
+		p.env = append(opts.Env, p.env...)
 	} else {
 		opts.Env = opts.Env
 	}
@@ -396,28 +397,28 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 	// that have been included in the package.
 	if len(opts.Args) == 0 {
 		if opts.Project != nil && len(opts.Project.Command()) > 0 {
-			packArgs = opts.Project.Command()
-		} else if packCmds != nil {
-			packArgs = packCmds
-		} else if targ != nil && len(targ.Command()) > 0 {
-			packArgs = targ.Command()
+			p.args = opts.Project.Command()
+		} else if rootfsArgs != nil {
+			p.args = rootfsArgs
+		} else if p.target != nil && len(p.target.Command()) > 0 {
+			p.args = p.target.Command()
 		}
 	}
 
 	// Only parse arguments if they have been provided.
-	if len(packArgs) > 0 {
-		packArgs, err = shellwords.Parse(fmt.Sprintf("'%s'", strings.Join(packArgs, "' '")))
+	if len(p.args) > 0 {
+		p.args, err = shellwords.Parse(fmt.Sprintf("'%s'", strings.Join(p.args, "' '")))
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	if opts.Project != nil {
-		packRoms = opts.Project.Roms()
+		p.roms = opts.Project.Roms()
 	} else if len(opts.Roms) > 0 {
-		packRoms = opts.Roms
-	} else if targ != nil && len(targ.Roms()) > 0 {
-		packRoms = targ.Roms()
+		p.roms = opts.Roms
+	} else if p.target != nil && len(p.target.Roms()) > 0 {
+		p.roms = p.target.Roms()
 	}
 
 	var labels map[string]string
@@ -447,42 +448,42 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 
 		processtree.NewProcessTreeItem(
 			"packaging "+opts.Name,
-			packPlatform.Name()+"/"+packArchitecture.Name(),
+			p.platform.Name()+"/"+p.architecture.Name(),
 			func(ctx context.Context) error {
 				popts := append(opts.packopts,
-					packmanager.PackArgs(packArgs...),
-					packmanager.PackArchitecture(packArchitecture),
-					packmanager.PackPlatform(packPlatform),
+					packmanager.PackArgs(p.args...),
+					packmanager.PackArchitecture(p.architecture),
+					packmanager.PackPlatform(p.platform),
 					packmanager.PackName(opts.Name),
 					packmanager.PackOutput(opts.Output),
 					packmanager.PackLabels(labels),
 				)
 
-				if len(packKernel) > 0 {
+				if len(p.kernel) > 0 {
 					popts = append(popts,
-						packmanager.PackKernel(packKernel),
+						packmanager.PackKernel(p.kernel),
 					)
 				}
 
-				if packRootfs != nil {
+				if p.rootfs != nil {
 					popts = append(popts,
-						packmanager.PackInitrd(packRootfs),
+						packmanager.PackInitrd(p.rootfs),
 					)
 				}
 
-				if len(packRoms) > 0 {
+				if len(p.roms) > 0 {
 					popts = append(popts,
-						packmanager.PackRoms(packRoms...),
+						packmanager.PackRoms(p.roms...),
 					)
 				}
 
-				if !opts.NoKConfig && packKConfig != nil {
+				if !opts.NoKConfig && p.kconfig != nil {
 					popts = append(popts,
-						packmanager.PackKConfig(packKConfig),
+						packmanager.PackKConfig(p.kconfig),
 					)
 				}
 
-				if ukversion, ok := packKConfig.Get(unikraft.UK_FULLVERSION); ok {
+				if ukversion, ok := p.kconfig.Get(unikraft.UK_FULLVERSION); ok {
 					popts = append(popts,
 						packmanager.PackWithKernelVersion(ukversion.Value),
 					)
@@ -495,7 +496,7 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 					popts = append(popts, packmanager.PackWithEnvs(opts.Env))
 				}
 
-				more, err := opts.pm.Pack(ctx, targ, popts...)
+				more, err := opts.pm.Pack(ctx, p.target, popts...)
 				if err != nil {
 					return err
 				}
