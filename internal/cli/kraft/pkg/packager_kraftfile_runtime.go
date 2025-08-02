@@ -481,12 +481,12 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 					popts = append(popts,
 						packmanager.PackKConfig(p.kconfig),
 					)
-				}
 
-				if ukversion, ok := p.kconfig.Get(unikraft.UK_FULLVERSION); ok {
-					popts = append(popts,
-						packmanager.PackWithKernelVersion(ukversion.Value),
-					)
+					if ukversion, ok := p.kconfig.Get(unikraft.UK_FULLVERSION); ok {
+						popts = append(popts,
+							packmanager.PackWithKernelVersion(ukversion.Value),
+						)
+					}
 				}
 
 				envs := opts.aggregateEnvs()
