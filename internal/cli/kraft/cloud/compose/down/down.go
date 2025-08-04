@@ -159,7 +159,7 @@ func (opts *DownOptions) Run(ctx context.Context, args []string) error {
 	}
 
 	if len(instances) > 0 {
-		log.G(ctx).Infof("stopping %d instance(s)", len(instances))
+		log.G(ctx).Infof("removing %d instance(s)", len(instances))
 
 		if _, err := opts.Client.Instances().WithMetro(opts.Metro).Delete(ctx, instances...); err != nil {
 			errGroup = append(errGroup, fmt.Errorf("removing instances: %w", err))

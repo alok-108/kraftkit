@@ -131,18 +131,12 @@ func Stop(ctx context.Context, opts *StopOptions, args ...string) error {
 			return nil
 		}
 
-		log.G(ctx).Infof("stopping %d instance(s)", len(instList))
-
 		uuids := make([]string, 0, len(instList))
 		for _, instItem := range instList {
 			uuids = append(uuids, instItem.UUID)
 		}
 
-		if _, err := opts.Client.Instances().WithMetro(opts.Metro).Stop(ctx, timeout, opts.Force, uuids...); err != nil {
-			return fmt.Errorf("stopping %d instance(s): %w", len(uuids), err)
-		}
-
-		return nil
+		args = uuids
 	}
 
 	log.G(ctx).Infof("stopping %d instance(s)", len(args))
@@ -151,8 +145,19 @@ func Stop(ctx context.Context, opts *StopOptions, args ...string) error {
 	if err != nil {
 		return fmt.Errorf("stopping %d instance(s): %w", len(args), err)
 	}
-	if _, err = stopResp.AllOrErr(); err != nil {
-		return fmt.Errorf("stopping %d instance(s): %w", len(args), err)
+	stopResponses, err := stopResp.AllOrErr()
+
+	totalStopped := 0
+	for _, stopped := range stopResponses {
+		if stopped.Status == "success" {
+			totalStopped++
+		}
+	}
+
+	log.G(ctx).Infof("stopped %d instance(s)", totalStopped)
+
+	if err != nil {
+		return fmt.Errorf("stopped %d instance(s): %w", len(args), err)
 	}
 
 	return nil
