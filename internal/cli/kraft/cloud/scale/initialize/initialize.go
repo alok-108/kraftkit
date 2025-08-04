@@ -126,14 +126,14 @@ func (opts *InitOptions) Run(ctx context.Context, args []string) error {
 
 		instListResp, err := opts.Client.Instances().WithMetro(opts.Metro).ListTemplate(ctx)
 		if err != nil {
-			return fmt.Errorf("could not list instances: %w", err)
+			return fmt.Errorf("could not list instance templates: %w", err)
 		}
 		instList, err := instListResp.AllOrErr()
 		if err != nil {
-			return fmt.Errorf("could not list instances: %w", err)
+			return fmt.Errorf("could not list instance templates: %w", err)
 		}
 		if len(instList) == 0 {
-			return fmt.Errorf("no instance found in service")
+			return fmt.Errorf("no instance template found in service")
 		}
 
 		if len(instList) == 1 {

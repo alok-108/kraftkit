@@ -57,7 +57,7 @@ func Create(ctx context.Context, opts *CreateOptions, args []string) ([]kcinstan
 	}
 	create, err := createResp.AllOrErr()
 	if err != nil {
-		return nil, fmt.Errorf("creating instance templte: %w", err)
+		return nil, fmt.Errorf("creating instance template: %w", err)
 	}
 
 	return create, nil
