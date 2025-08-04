@@ -23,8 +23,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/mattn/go-shellwords"
-	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 
 	"kraftkit.sh/kconfig"
