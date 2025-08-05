@@ -182,7 +182,7 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 				packs, err = opts.pm.Catalog(ctx, append(qopts, packmanager.WithRemote(false))...)
 				if err != nil {
 					return fmt.Errorf("could not query catalog: %w", err)
-				} else if len(packs) == 0 {
+				} else if len(packs) == 0 && !opts.NoPull {
 					// Try again with a remote update request.  Save this to qopts in case we
 					// need to call `Catalog` again.
 					packs, err = opts.pm.Catalog(ctx, append(qopts, packmanager.WithRemote(true))...)
