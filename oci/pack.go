@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -70,8 +71,11 @@ type ociPackage struct {
 	kernel    string
 	kernelDbg string
 	initrd    initrd.Initrd
+	roms      []string
 	command   []string
+	env       []string
 	labels    map[string]string
+	popts     *packmanager.PackOptions
 
 	original *ociPackage
 }
@@ -81,9 +85,8 @@ var (
 	_ target.Target = (*ociPackage)(nil)
 )
 
-// NewPackageFromTarget generates an OCI implementation of the pack.Package
-// construct based on an input Application and options.
-func NewPackageFromTarget(ctx context.Context, handle handler.Handler, targ target.Target, opts ...packmanager.PackOption) (pack.Package, error) {
+// NewPackage creates a new package based on the provided options.
+func NewPackage(ctx context.Context, handle handler.Handler, opts ...packmanager.PackOption) (pack.Package, error) {
 	var err error
 
 	popts := packmanager.NewPackOptions()
@@ -93,25 +96,18 @@ func NewPackageFromTarget(ctx context.Context, handle handler.Handler, targ targ
 
 	// Initialize the ociPackage by copying over target.Target attributes
 	ocipack := ociPackage{
-		arch:      targ.Architecture(),
-		plat:      targ.Platform(),
-		kconfig:   targ.KConfig(),
-		initrd:    targ.Initrd(),
-		kernel:    targ.Kernel(),
-		kernelDbg: targ.KernelDbg(),
+		arch:      popts.Architecture(),
+		plat:      popts.Platform(),
+		kconfig:   popts.KConfig(),
+		initrd:    popts.Initrd(),
+		roms:      popts.Roms(),
+		kernel:    popts.Kernel(),
+		kernelDbg: popts.KernelDbg(),
 		command:   popts.Args(),
+		env:       popts.Env(),
 		labels:    popts.Labels(),
 		handle:    handle,
-	}
-
-	// It is possible that `NewPackageFromTarget` is called with an existing
-	// `targ` which represents a previously generated OCI package, e.g. via
-	// `NewPackageFromOCIManifestDigest`.  In this case, we can keep a reference
-	// to the original package and use it to re-tag the original manifest or any
-	// access any other related information which may otherwise be lost through
-	// the `target.Target` or `pack.Package` interfaces.
-	if original, ok := targ.(*ociPackage); ok {
-		ocipack.original = original
+		popts:     popts,
 	}
 
 	if popts.Name() == "" {
@@ -125,6 +121,90 @@ func NewPackageFromTarget(ctx context.Context, handle handler.Handler, targ targ
 	if err != nil {
 		return nil, fmt.Errorf("could not parse image reference: %w", err)
 	}
+
+	return ocipack.build(ctx)
+}
+
+// NewPackageFromTarget generates an OCI implementation of the pack.Package
+// construct based on an input Application and options.
+func NewPackageFromTarget(ctx context.Context, handle handler.Handler, targ target.Target, opts ...packmanager.PackOption) (pack.Package, error) {
+	var err error
+
+	// Initialize the ociPackage by copying over target.Target attributes
+	ocipack := ociPackage{
+		arch:      targ.Architecture(),
+		plat:      targ.Platform(),
+		kconfig:   targ.KConfig(),
+		initrd:    targ.Initrd(),
+		roms:      targ.Roms(),
+		kernel:    targ.Kernel(),
+		kernelDbg: targ.KernelDbg(),
+		command:   targ.Command(),
+		handle:    handle,
+		popts:     packmanager.NewPackOptions(),
+	}
+
+	for _, opt := range opts {
+		opt(ocipack.popts)
+	}
+
+	if ocipack.popts.Name() == "" {
+		return nil, fmt.Errorf("cannot create package without name")
+	}
+	ocipack.ref, err = name.ParseReference(
+		ocipack.popts.Name(),
+		name.WithDefaultRegistry(DefaultRegistry),
+		name.WithDefaultTag(DefaultTag),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse image reference: %w", err)
+	}
+
+	if ocipack.popts.Architecture() != nil {
+		ocipack.arch = ocipack.popts.Architecture()
+	}
+	if ocipack.popts.Platform() != nil {
+		ocipack.plat = ocipack.popts.Platform()
+	}
+	if ocipack.popts.KConfig() != nil {
+		ocipack.kconfig = ocipack.popts.KConfig()
+	}
+	if ocipack.popts.Initrd() != nil {
+		ocipack.initrd = ocipack.popts.Initrd()
+	}
+	if len(ocipack.popts.Roms()) > 0 {
+		ocipack.roms = ocipack.popts.Roms()
+	}
+	if ocipack.popts.Kernel() != "" {
+		ocipack.kernel = ocipack.popts.Kernel()
+	}
+	if ocipack.popts.KernelDbg() != "" {
+		ocipack.kernelDbg = ocipack.popts.KernelDbg()
+	}
+	if len(ocipack.popts.Args()) > 0 {
+		ocipack.command = ocipack.popts.Args()
+	}
+	if len(ocipack.popts.Env()) > 0 {
+		ocipack.env = ocipack.popts.Env()
+	}
+
+	// It is possible that `NewPackageFromTarget` is called with an existing
+	// `targ` which represents a previously generated OCI package, e.g. via
+	// `NewPackageFromOCIManifestDigest`.  In this case, we can keep a reference
+	// to the original package and use it to re-tag the original manifest or any
+	// access any other related information which may otherwise be lost through
+	// the `target.Target` or `pack.Package` interfaces.
+	if original, ok := targ.(*ociPackage); ok {
+		ocipack.original = original
+	}
+
+	return ocipack.build(ctx)
+}
+
+// build is an internal method used to build the package based on the ociPackage
+// attributes and the provided PackOptions from a public constructor.
+func (ocipack *ociPackage) build(ctx context.Context) (*ociPackage, error) {
+	var err error
 
 	// Prepare a new manifest which contains the individual components of the
 	// target, including the kernel image.
@@ -147,42 +227,24 @@ func NewPackageFromTarget(ctx context.Context, handle handler.Handler, targ targ
 		}
 	}
 
-	if popts.KernelDbg() && len(ocipack.KernelDbg()) > 0 {
+	if len(ocipack.KernelDbg()) > 0 {
 		if err := ocipack.manifest.SetKernelDbg(ctx, ocipack.KernelDbg()); err != nil {
 			return nil, err
 		}
 	}
 
-	if popts.Initrd() != "" {
-		if err := ocipack.manifest.SetInitrd(ctx, popts.Initrd()); err != nil {
+	if ocipack.Initrd() != nil {
+		if err := ocipack.manifest.SetInitrd(ctx, ocipack.Initrd().Options().Output()); err != nil {
 			return nil, err
 		}
 	}
-
-	// TODO(nderjung): See below.
-
-	// if popts.PackKernelLibraryObjects() {
-	// 	log.G(ctx).Debug("including kernel library objects")
-	// }
-
-	// if popts.PackKernelLibraryIntermediateObjects() {
-	// 	log.G(ctx).Debug("including kernel library intermediate objects")
-	// }
-
-	// if popts.PackKernelSourceFiles() {
-	// 	log.G(ctx).Debug("including kernel source files")
-	// }
-
-	// if popts.PackAppSourceFiles() {
-	// 	log.G(ctx).Debug("including application source files")
-	// }
 
 	if ocipack.original != nil {
 		ocipack.manifest.config = ocipack.original.manifest.config
 	}
 
 	ocipack.manifest.SetAnnotation(ctx, AnnotationName, ocipack.Name())
-	if version := popts.KernelVersion(); len(version) > 0 {
+	if version := ocipack.popts.KernelVersion(); len(version) > 0 {
 		ocipack.manifest.SetAnnotation(ctx, AnnotationKernelVersion, version)
 		ocipack.manifest.SetOSVersion(ctx, version)
 	}
@@ -205,13 +267,13 @@ func NewPackageFromTarget(ctx context.Context, handle handler.Handler, targ targ
 
 	ocipack.manifest.SetOS(ctx, ocipack.Platform().Name())
 	ocipack.manifest.SetArchitecture(ctx, ocipack.Architecture().Name())
-	ocipack.manifest.SetEnv(ctx, popts.Env())
+	ocipack.manifest.SetEnv(ctx, ocipack.env)
 	for _, env := range ocipack.manifest.config.Config.Env {
 		k, v, _ := strings.Cut(env, "=")
 		log.G(ctx).WithField(k, v).Debug("env")
 	}
 
-	switch popts.MergeStrategy() {
+	switch ocipack.popts.MergeStrategy() {
 	case packmanager.StrategyMerge, packmanager.StrategyAbort:
 		ocipack.index, err = NewIndexFromRef(ctx, ocipack.handle, ocipack.ref.Name())
 		if err != nil {
@@ -219,7 +281,7 @@ func NewPackageFromTarget(ctx context.Context, handle handler.Handler, targ targ
 			if err != nil {
 				return nil, fmt.Errorf("could not instantiate new image structure: %w", err)
 			}
-		} else if popts.MergeStrategy() == packmanager.StrategyAbort {
+		} else if ocipack.popts.MergeStrategy() == packmanager.StrategyAbort {
 			return nil, fmt.Errorf("cannot overwrite existing manifest as merge strategy is set to exit on conflict")
 		}
 
@@ -236,7 +298,7 @@ func NewPackageFromTarget(ctx context.Context, handle handler.Handler, targ targ
 		return nil, fmt.Errorf("package merge strategy unset")
 	}
 
-	if popts.MergeStrategy() == packmanager.StrategyAbort && len(ocipack.index.manifests) > 0 {
+	if ocipack.popts.MergeStrategy() == packmanager.StrategyAbort && len(ocipack.index.manifests) > 0 {
 		return nil, fmt.Errorf("cannot continue: reference already exists and merge strategy set to none")
 	}
 
@@ -279,7 +341,7 @@ func NewPackageFromTarget(ctx context.Context, handle handler.Handler, targ targ
 				return nil, fmt.Errorf("could not generate manifest platform checksum for '%s': %w", existingManifest.desc.Digest.String(), err)
 			}
 			if existingManifestChecksum == newManifestChecksum {
-				switch popts.MergeStrategy() {
+				switch ocipack.popts.MergeStrategy() {
 				case packmanager.StrategyAbort:
 					return nil, fmt.Errorf("cannot overwrite existing manifest as merge strategy is set to exit on conflict")
 
@@ -299,7 +361,7 @@ func NewPackageFromTarget(ctx context.Context, handle handler.Handler, targ targ
 		ocipack.index.manifests = manifests
 	}
 
-	if popts.PackKConfig() {
+	if len(ocipack.kconfig) > 0 {
 		log.G(ctx).
 			Debug("including list of kconfig as features")
 
@@ -330,6 +392,23 @@ func NewPackageFromTarget(ctx context.Context, handle handler.Handler, targ targ
 			Trace("label")
 	}
 
+	// If the merge strategy is set to overwrite, we remove any existing
+	// ROMs from the manifest, as we are going to re-add them.
+	if ocipack.popts.MergeStrategy() == packmanager.StrategyOverwrite {
+		ocipack.manifest.layers = slices.DeleteFunc(ocipack.manifest.layers, func(layer *Layer) bool {
+			return layer.blob.desc.MediaType == MediaTypeRom
+		})
+	}
+
+	for _, rom := range ocipack.Roms() {
+		log.G(ctx).
+			WithField("rom", rom).
+			Trace("layer")
+		if err := ocipack.manifest.AddRom(ctx, rom); err != nil {
+			return nil, fmt.Errorf("could not add ROM '%s' to manifest: %w", rom, err)
+		}
+	}
+
 	if err := ocipack.index.AddManifest(ctx, ocipack.manifest); err != nil {
 		return nil, fmt.Errorf("could not add manifest to index: %w", err)
 	}
@@ -338,7 +417,7 @@ func NewPackageFromTarget(ctx context.Context, handle handler.Handler, targ targ
 		return nil, fmt.Errorf("could not save index: %w", err)
 	}
 
-	return &ocipack, nil
+	return ocipack, nil
 }
 
 // newPackageFromOCIManifestDigest is an internal method which retrieves the OCI
@@ -992,6 +1071,11 @@ func (ocipack *ociPackage) KernelDbg() string {
 // Initrd implements unikraft.target.Target
 func (ocipack *ociPackage) Initrd() initrd.Initrd {
 	return ocipack.initrd
+}
+
+// Roms implements unikraft.target.Target
+func (ocipack *ociPackage) Roms() []string {
+	return ocipack.roms
 }
 
 // Command implements unikraft.target.Target

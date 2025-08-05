@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"kraftkit.sh/config"
+	"kraftkit.sh/initrd"
 	"kraftkit.sh/internal/cli/kraft/utils"
 	"kraftkit.sh/log"
 	"kraftkit.sh/pack"
@@ -64,7 +65,8 @@ func (p *packagerCliKernel) Pack(ctx context.Context, opts *PkgOptions, args ...
 
 	var cmds []string
 	var envs []string
-	if opts.Rootfs, cmds, envs, err = utils.BuildRootfs(ctx, opts.Workdir, opts.Rootfs, opts.Compress, targ.Architecture().String()); err != nil {
+	var rootfs initrd.Initrd
+	if rootfs, cmds, envs, err = utils.BuildRootfs(ctx, opts.Workdir, opts.Rootfs, opts.Compress, targ.Architecture().String()); err != nil {
 		return nil, fmt.Errorf("could not build rootfs: %w", err)
 	}
 
@@ -103,13 +105,18 @@ func (p *packagerCliKernel) Pack(ctx context.Context, opts *PkgOptions, args ...
 			opts.Platform+"/"+opts.Architecture,
 			func(ctx context.Context) error {
 				popts := append(opts.packopts,
+					packmanager.PackArchitecture(targ.Architecture()),
+					packmanager.PackPlatform(targ.Platform()),
 					packmanager.PackArgs(opts.Args...),
-					packmanager.PackInitrd(opts.Rootfs),
-					packmanager.PackKConfig(!opts.NoKConfig),
+					packmanager.PackInitrd(rootfs),
 					packmanager.PackName(opts.Name),
 					packmanager.PackOutput(opts.Output),
 					packmanager.PackLabels(labels),
 				)
+
+				if !opts.NoKConfig {
+					popts = append(popts, packmanager.PackKConfig(targ.KConfig()))
+				}
 
 				envs := opts.aggregateEnvs()
 				if len(envs) > 0 {

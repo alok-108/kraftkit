@@ -47,11 +47,13 @@ type PkgOptions struct {
 	Labels       []string                  `local:"true" long:"label" short:"l" usage:"Set labels to be packed into the package (k=v)"`
 	Name         string                    `local:"true" long:"name" short:"n" usage:"Specify the name of the package"`
 	NoKConfig    bool                      `local:"true" long:"no-kconfig" usage:"Do not include target .config as metadata"`
+	NoKernel     bool                      `local:"true" long:"no-kernel" usage:"Allow packaging without a kernel image"`
 	NoPull       bool                      `local:"true" long:"no-pull" usage:"Do not pull package dependencies before packaging"`
 	Output       string                    `local:"true" long:"output" short:"o" usage:"Save the package at the following output"`
 	Platform     string                    `local:"true" long:"plat" short:"p" usage:"Filter the creation of the package by platform of known targets (fc/qemu/xen/kraftcloud)"`
 	Project      app.Application           `noattribute:"true"`
 	Push         bool                      `local:"true" long:"push" short:"P" usage:"Push the package on if successfully packaged"`
+	Roms         []string                  `local:"true" long:"rom" short:"R" usage:"Specify a path to an auxiliary ROM to include in the package"`
 	Rootfs       string                    `local:"true" long:"rootfs" usage:"Specify a path to use as root file system (can be volume or initramfs)"`
 	Runtime      string                    `local:"true" long:"runtime" short:"r" usage:"Set the runtime to use for the package"`
 	Strategy     packmanager.MergeStrategy `noattribute:"true"`

@@ -301,6 +301,28 @@ func (manifest *Manifest) SetKernelDbg(ctx context.Context, path string) error {
 	return nil
 }
 
+// AddRom includes an auxiliary read-only memory blob into the manifest.
+func (manifest *Manifest) AddRom(ctx context.Context, path string) error {
+	log.G(ctx).
+		WithField("src", path).
+		Debug("including rom")
+
+	layer, err := NewLayerFromFile(ctx,
+		MediaTypeRom,
+		path,
+		"",
+	)
+	if err != nil {
+		return fmt.Errorf("could build layer from file: %w", err)
+	}
+
+	if _, err := manifest.AddLayer(ctx, layer); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // SetLabel sets a label of the image with the provided key.
 func (manifest *Manifest) SetLabel(_ context.Context, key, val string) {
 	if manifest.config.Config.Labels == nil {

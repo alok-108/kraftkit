@@ -41,6 +41,9 @@ type Target interface {
 	// Initrd contains the initramfs configuration for this target.
 	Initrd() initrd.Initrd
 
+	// Auxiliary read-only memory blobs for this target.
+	Roms() []string
+
 	// Command is the command-line arguments set for this target.
 	Command() []string
 
@@ -71,6 +74,9 @@ type TargetConfig struct {
 
 	// initrd is the configuration for the initrd.
 	initrd initrd.Initrd
+
+	// auxiliary read-only memory blobs for this target.
+	roms []string
 
 	// command is the command-line arguments set for this target.
 	command []string
@@ -121,6 +127,10 @@ func (tc *TargetConfig) KernelDbg() string {
 
 func (tc *TargetConfig) Initrd() initrd.Initrd {
 	return tc.initrd
+}
+
+func (tc *TargetConfig) Roms() []string {
+	return tc.roms
 }
 
 func (tc *TargetConfig) Type() unikraft.ComponentType {

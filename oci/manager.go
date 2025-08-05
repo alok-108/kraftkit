@@ -226,17 +226,17 @@ func (manager *OCIManager) update(ctx context.Context, auths map[string]config.A
 
 // Pack implements packmanager.PackageManager
 func (manager *OCIManager) Pack(ctx context.Context, entity component.Component, opts ...packmanager.PackOption) ([]pack.Package, error) {
-	targ, ok := entity.(target.Target)
-	if !ok {
-		return nil, fmt.Errorf("entity is not Unikraft target")
-	}
-
 	ctx, handle, err := manager.handle(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	pkg, err := NewPackageFromTarget(ctx, handle, targ, opts...)
+	var pkg pack.Package
+	if targ, ok := entity.(target.Target); ok {
+		pkg, err = NewPackageFromTarget(ctx, handle, targ, opts...)
+	} else {
+		pkg, err = NewPackage(ctx, handle, opts...)
+	}
 	if err != nil {
 		return nil, err
 	}

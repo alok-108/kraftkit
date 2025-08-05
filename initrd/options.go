@@ -12,6 +12,31 @@ type InitrdOptions struct {
 	workdir  string
 }
 
+// Whether the resulting CPIO archive file should be compressed.
+func (opts InitrdOptions) Compress() bool {
+	return opts.compress
+}
+
+// The output location of the resulting CPIO archive file.
+func (opts InitrdOptions) Output() string {
+	return opts.output
+}
+
+// The cache directory used during the serialization of the initramfs.
+func (opts InitrdOptions) CacheDir() string {
+	return opts.cacheDir
+}
+
+// The architecture of the file contents of binaries in the initramfs.
+func (opts InitrdOptions) Architecture() string {
+	return opts.arch
+}
+
+// The working directory of the initramfs builder.
+func (opts InitrdOptions) Workdir() string {
+	return opts.workdir
+}
+
 type InitrdOption func(*InitrdOptions) error
 
 // WithCompression sets the compression of the resulting CPIO archive file.

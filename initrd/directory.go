@@ -190,6 +190,11 @@ func (initrd *directory) Build(ctx context.Context) (string, error) {
 	return initrd.opts.output, nil
 }
 
+// Options implements Initrd.
+func (initrd *directory) Options() InitrdOptions {
+	return initrd.opts
+}
+
 // Env implements Initrd.
 func (initrd *directory) Env() []string {
 	return nil

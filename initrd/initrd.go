@@ -25,6 +25,9 @@ type Initrd interface {
 	// Build the rootfs and return the location of the result or error.
 	Build(context.Context) (string, error)
 
+	// Options returns the options used to construct this Initrd.
+	Options() InitrdOptions
+
 	// All environment variables that are set within.
 	Env() []string
 

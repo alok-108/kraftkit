@@ -64,6 +64,11 @@ func (initrd *file) Build(_ context.Context) (string, error) {
 	return initrd.path, nil
 }
 
+// Options implements Initrd.
+func (initrd *file) Options() InitrdOptions {
+	return initrd.opts
+}
+
 // Env implements Initrd.
 func (initrd *file) Env() []string {
 	return nil

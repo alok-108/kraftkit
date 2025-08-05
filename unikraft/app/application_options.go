@@ -127,6 +127,14 @@ func WithRootfs(rootfs string) ApplicationOption {
 	}
 }
 
+// WithRoms sets the application's auxiliary read-only memory blobs.
+func WithRoms(roms ...string) ApplicationOption {
+	return func(ac *application) error {
+		ac.roms = roms
+		return nil
+	}
+}
+
 // WithTemplate sets the application's template
 func WithTemplate(template *template.TemplateConfig) ApplicationOption {
 	return func(ac *application) error {

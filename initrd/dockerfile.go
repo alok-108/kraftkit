@@ -765,6 +765,11 @@ func (initrd *dockerfile) Build(ctx context.Context) (string, error) {
 	return initrd.opts.output, nil
 }
 
+// Options implements Initrd.
+func (initrd *dockerfile) Options() InitrdOptions {
+	return initrd.opts
+}
+
 // Env implements Initrd.
 func (initrd *dockerfile) Env() []string {
 	return initrd.env
