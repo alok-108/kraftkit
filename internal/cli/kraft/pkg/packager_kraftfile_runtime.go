@@ -90,7 +90,7 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 		return nil, fmt.Errorf("no name specified: ")
 	}
 
-	if opts.Platform == "kraftcloud" || (opts.Project.Runtime().Platform() != nil && opts.Project.Runtime().Platform().Name() == "kraftcloud") {
+	if opts.Platform == "kraftcloud" || (opts.Project != nil && opts.Project.Runtime() != nil && opts.Project.Runtime().Platform() != nil && opts.Project.Runtime().Platform().Name() == "kraftcloud") {
 		p.name = utils.RewrapAsKraftCloudPackage(p.name)
 	}
 
