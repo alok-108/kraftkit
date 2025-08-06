@@ -90,7 +90,7 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 		return nil, fmt.Errorf("no name specified: ")
 	}
 
-	if opts.Platform == "kraftcloud" || (opts.Project.Runtime().Platform() != nil && opts.Project.Runtime().Platform().Name() == "kraftcloud") {
+	if opts.Platform == "kraftcloud" || (opts.Project != nil && opts.Project.Runtime() != nil && opts.Project.Runtime().Platform() != nil && opts.Project.Runtime().Platform().Name() == "kraftcloud") {
 		p.name = utils.RewrapAsKraftCloudPackage(p.name)
 	}
 
@@ -182,7 +182,7 @@ func (p *packagerKraftfileRuntime) Pack(ctx context.Context, opts *PkgOptions, a
 				packs, err = opts.pm.Catalog(ctx, append(qopts, packmanager.WithRemote(false))...)
 				if err != nil {
 					return fmt.Errorf("could not query catalog: %w", err)
-				} else if len(packs) == 0 {
+				} else if len(packs) == 0 && !opts.NoPull {
 					// Try again with a remote update request.  Save this to qopts in case we
 					// need to call `Catalog` again.
 					packs, err = opts.pm.Catalog(ctx, append(qopts, packmanager.WithRemote(true))...)
