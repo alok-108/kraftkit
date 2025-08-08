@@ -120,15 +120,11 @@ func (opts *Webinstall) Run(ctx context.Context, args []string) error {
 
 	ctx = log.WithLogger(ctx, logger)
 
-	// Create a reader for the installScript
-	scriptReader := strings.NewReader(installScript)
-
 	// Create a reader for the kraftkit version
 	version, err := opts.getKraftkitVersion(ctx)
 	if err != nil {
 		return err
 	}
-	versionReader := strings.NewReader(version)
 
 	// Get a time modified for the installScript
 	nowScript := time.Now()
@@ -145,24 +141,23 @@ func (opts *Webinstall) Run(ctx context.Context, args []string) error {
 			case <-time.After(opts.Freq):
 			}
 
-			version, err := opts.getKraftkitVersion(ctx)
+			version, err = opts.getKraftkitVersion(ctx)
 			if err != nil {
 				log.G(ctx).Errorf("could not retrieve latest version: %v", err)
 				continue
 			}
-			versionReader = strings.NewReader(version)
 			nowVersion = time.Now()
 		}
 	}()
 
 	// Serve the installScript
 	http.HandleFunc(DefaultScriptPath, func(w http.ResponseWriter, r *http.Request) {
-		http.ServeContent(w, r, "install.sh", nowScript, scriptReader)
+		http.ServeContent(w, r, "install.sh", nowScript, strings.NewReader(installScript))
 	})
 
 	// Serve the kraftkit version
 	http.HandleFunc(DefaultLatestPath, func(w http.ResponseWriter, r *http.Request) {
-		http.ServeContent(w, r, "latest.txt", nowVersion, versionReader)
+		http.ServeContent(w, r, "latest.txt", nowVersion, strings.NewReader(version))
 	})
 
 	log.G(ctx).Infof("Listening on :%d...\n", opts.Port)
