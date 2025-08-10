@@ -25,7 +25,7 @@ require (
 	github.com/containerd/log v0.1.0
 	github.com/containerd/nerdctl v1.7.7
 	github.com/containerd/platforms v1.0.0-rc.1
-	github.com/containers/image/v5 v5.36.0
+	github.com/containers/image/v5 v5.36.1
 	github.com/cpuguy83/go-md2man/v2 v2.0.7
 	github.com/cyphar/filepath-securejoin v0.4.1
 	github.com/dgraph-io/badger/v3 v3.2103.5
@@ -136,7 +136,7 @@ require (
 	github.com/containernetworking/plugins v1.7.1 // indirect
 	github.com/containers/libtrust v0.0.0-20230121012942-c1716e8a8d01 // indirect
 	github.com/containers/ocicrypt v1.2.1 // indirect
-	github.com/containers/storage v1.59.0 // indirect
+	github.com/containers/storage v1.59.1 // indirect
 	github.com/coreos/go-iptables v0.8.0 // indirect
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
 	github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 // indirect
