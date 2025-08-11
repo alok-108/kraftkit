@@ -143,6 +143,7 @@ runs:
         --rm \
         -itd \
         --privileged \
+        --security-opt label=disable \
         --name buildkitd_${GITHUB_RUN_ID}_${SUFFIX} \
         -v /run/buildkit:/run/buildkit:rw \
         moby/buildkit:v0.20.2;
@@ -216,6 +217,7 @@ runs:
         $([ "${{ inputs.privileged }}" = "true" ] && echo -n "--privileged") \
         --workdir /github/workspace \
         --rm \
+        --security-opt label=disable \
         --env-file <(env) \
         -e "CI=true" \
         -e "GITHUB_WORKSPACE=/github/workspace" \
