@@ -96,6 +96,11 @@ func (initrd *tarball) Build(ctx context.Context) (string, error) {
 		tarReader = tar.NewReader(gzr)
 		close = gzr.Close
 	} else {
+		_, err = tarArchive.Seek(0, io.SeekStart)
+		if err != nil {
+			return "", fmt.Errorf("could not seek to start of tarball: %w", err)
+		}
+
 		tarReader = tar.NewReader(tarArchive)
 		close = func() error { return nil }
 	}
@@ -156,6 +161,11 @@ func (initrd *tarball) Build(ctx context.Context) (string, error) {
 	if gzr, err := gzip.NewReader(tarArchive); err == nil {
 		tarReader = tar.NewReader(gzr)
 	} else {
+		_, err = tarArchive.Seek(0, io.SeekStart)
+		if err != nil {
+			return "", fmt.Errorf("could not seek to start of tarball: %w", err)
+		}
+
 		tarReader = tar.NewReader(tarArchive)
 	}
 
