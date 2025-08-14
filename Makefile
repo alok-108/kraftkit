@@ -22,7 +22,7 @@ TOOLS       ?= github-action \
                webinstall
 GOMOD       ?= kraftkit.sh
 IMAGE_TAG   ?= latest
-GO_VERSION  ?= 1.24
+GO_VERSION  ?= 1.25
 TAGS        ?=
 STATIC      ?= y
 
