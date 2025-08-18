@@ -124,7 +124,7 @@ func Logs(ctx context.Context, opts *LogOptions, args ...string) error {
 		}
 
 		for _, instance := range item.Instances {
-			instances = append(instances, instance.Name)
+			instances = append(instances, instance.UUID)
 		}
 	}
 
