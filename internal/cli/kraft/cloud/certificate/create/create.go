@@ -21,7 +21,6 @@ import (
 	"kraftkit.sh/cmdfactory"
 	"kraftkit.sh/config"
 	"kraftkit.sh/internal/cli/kraft/cloud/utils"
-	"kraftkit.sh/iostreams"
 	"kraftkit.sh/log"
 )
 
@@ -32,6 +31,7 @@ type CreateOptions struct {
 	Chain         string                             `local:"true" long:"chain" short:"C" usage:"The chain of the certificate"`
 	CN            string                             `local:"true" long:"cn" short:"c" usage:"The common name of the certificate"`
 	Name          string                             `local:"true" size:"name" short:"n" usage:"The name of the certificate"`
+	Output        string                             `local:"true" long:"output" short:"o" usage:"Set output format. Options: table,yaml,json,list,raw" default:"table"`
 	PKey          string                             `local:"true" long:"pkey" short:"p" usage:"The private key of the certificate in PEM format"`
 	Token         string                             `noattribute:"true"`
 	allowInsecure bool
@@ -197,6 +197,10 @@ func (opts *CreateOptions) Run(ctx context.Context, _ []string) error {
 		return fmt.Errorf("could not create certificate: %w", err)
 	}
 
-	_, err = fmt.Fprintln(iostreams.G(ctx).Out, certificate.Name)
-	return err
+	certResp, err := opts.Client.WithMetro(opts.Metro).Get(ctx, certificate.UUID)
+	if err != nil {
+		return fmt.Errorf("could not get certificate %s: %w", certificate.UUID, err)
+	}
+
+	return utils.PrintCertificates(ctx, opts.Output, *certResp)
 }
