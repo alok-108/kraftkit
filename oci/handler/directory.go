@@ -639,6 +639,27 @@ func (handle *DirectoryHandler) DeleteDigest(ctx context.Context, dgst digest.Di
 	return nil
 }
 
+// ReadDigest implements DigestReader.
+func (handle *DirectoryHandler) ReadDigest(ctx context.Context, dgst digest.Digest) (io.ReadCloser, error) {
+	digestPath := filepath.Join(
+		handle.path,
+		DirectoryHandlerDigestsDir,
+		dgst.Algorithm().String(),
+		dgst.Encoded(),
+	)
+
+	if _, err := os.Stat(digestPath); err != nil {
+		return nil, fmt.Errorf("could not find digest '%s': %w", dgst.String(), err)
+	}
+
+	file, err := os.Open(digestPath)
+	if err != nil {
+		return nil, fmt.Errorf("could not open digest '%s': %w", dgst.String(), err)
+	}
+
+	return file, nil
+}
+
 // SaveDescriptor implements DescriptorSaver.
 func (handle *DirectoryHandler) SaveDescriptor(ctx context.Context, ref string, desc ocispec.Descriptor, reader io.Reader, onProgress func(float64)) error {
 	blobPath := filepath.Join(

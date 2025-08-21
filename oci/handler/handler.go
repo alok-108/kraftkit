@@ -24,6 +24,12 @@ type DigestPuller interface {
 	PullDigest(ctx context.Context, mediaType, fullref string, dgst digest.Digest, plat *ocispec.Platform, onProgress func(float64)) error
 }
 
+type DigestReader interface {
+	// ReadDigest retrieves the provided digest and returns an io.ReadCloser
+	// which can be used to read the contents of the digest.
+	ReadDigest(context.Context, digest.Digest) (io.ReadCloser, error)
+}
+
 type DescriptorSaver interface {
 	// SaveDescriptor accepts an optional name reference which represents
 	// descriptor (but this is not always necessary and can be left blank if the
@@ -82,6 +88,7 @@ type Handler interface {
 	DigestPuller
 	DigestLister
 	DigestDeleter
+	DigestReader
 	DescriptorSaver
 	DescriptorPusher
 	ManifestLister
