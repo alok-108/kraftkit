@@ -862,7 +862,18 @@ func (ocipack *ociPackage) Pull(ctx context.Context, opts ...pack.PullOption) er
 	}
 
 	// The digest for index has now changed following a pull.  Figure out the new
-	// manifest by using the
+	// manifest by using the platform checksum to identify the correct manifest.
+	index, err := ocipack.handle.ResolveIndex(ctx, ocipack.imageRef())
+	if err != nil {
+		return fmt.Errorf("could not resolve index after pull: %w", err)
+	}
+	ocipack.index, err = NewIndexFromSpec(ctx, ocipack.handle, index)
+	if err != nil {
+		return fmt.Errorf("could not instantiate index from spec: %w", err)
+	}
+
+	// Calculate the platform checksum for the existing manifest, and compare
+	// against the manifests which are now available in the index.
 	existingChecksum, err := ociutils.PlatformChecksum(ocipack.imageRef(), ocipack.manifest.desc.Platform)
 	if err != nil {
 		return fmt.Errorf("calculating checksum for '%s': %w", ocipack.imageRef(), err)
