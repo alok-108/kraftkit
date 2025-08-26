@@ -2,7 +2,7 @@
 # Copyright (c) 2022, NEC Europe Ltd., Unikraft GmbH, and The KraftKit Authors.
 # Licensed under the BSD-3-Clause License (the "License").
 # You may not use this file except in compliance with the License.
-ARG DEBIAN_VERSION=trixie-20250203
+ARG DEBIAN_VERSION=trixie
 ARG KRAFTKIT_VERSION=latest
 ARG QEMU_VERSION=9.2.1
 ARG REGISTRY=kraftkit.sh

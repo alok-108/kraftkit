@@ -3,12 +3,12 @@
 # Licensed under the BSD-3-Clause License (the "License").
 # You may not use this file except in compliance with the License.
 ARG GO_VERSION=1.25.0
-ARG DEBIAN_VERSION=trixie-20250203
+ARG DEBIAN_VERSION=trixie
 ARG KRAFTKIT_VERSION=latest
 ARG QEMU_VERSION=9.2.1
 ARG REGISTRY=kraftkit.sh
 
-FROM golang:${GO_VERSION}-bookworm AS build
+FROM golang:${GO_VERSION}-trixie AS build
 
 COPY . /go/src/kraftkit.sh
 
