@@ -24,6 +24,7 @@ import (
 	"kraftkit.sh/cmdfactory"
 	"kraftkit.sh/packmanager"
 
+	"kraftkit.sh/internal/cli/kraft/pkg/export"
 	"kraftkit.sh/internal/cli/kraft/pkg/info"
 	"kraftkit.sh/internal/cli/kraft/pkg/list"
 	"kraftkit.sh/internal/cli/kraft/pkg/pull"
@@ -269,6 +270,7 @@ func NewCmd() *cobra.Command {
 		panic(err)
 	}
 
+	cmd.AddCommand(export.New())
 	cmd.AddCommand(info.New())
 	cmd.AddCommand(list.NewCmd())
 	cmd.AddCommand(pull.NewCmd())

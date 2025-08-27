@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/containerd/containerd"
@@ -200,6 +201,48 @@ func (handle *ContainerdHandler) DeleteDigest(ctx context.Context, dgst digest.D
 	}()
 
 	return handle.client.ContentStore().Delete(ctx, dgst)
+}
+
+type readerAtWrapper struct {
+	r   content.ReaderAt
+	off int64
+	mu  sync.Mutex
+}
+
+func (w *readerAtWrapper) Read(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if w.off >= w.r.Size() {
+		return 0, io.EOF
+	}
+
+	n, err := w.r.ReadAt(p, w.off)
+	w.off += int64(n)
+	return n, err
+}
+
+func (w *readerAtWrapper) Close() error {
+	return w.r.Close()
+}
+
+// ReadDigest implements DigestReader.
+func (handle *ContainerdHandler) ReadDigest(ctx context.Context, dgst digest.Digest) (io.ReadCloser, error) {
+	ctx, done, err := handle.lease(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		err = combineErrors(err, done(ctx))
+	}()
+
+	readerAt, err := handle.client.ContentStore().ReaderAt(ctx, ocispec.Descriptor{Digest: dgst})
+	if err != nil {
+		return nil, err
+	}
+
+	return &readerAtWrapper{r: readerAt}, nil
 }
 
 // SaveDescriptor implements DescriptorSaver.

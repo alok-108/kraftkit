@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	golog "log"
 	"net/http"
 	"os"
@@ -33,6 +34,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"oras.land/oras-go/v2/content"
 
+	"kraftkit.sh/archive"
 	"kraftkit.sh/config"
 	"kraftkit.sh/initrd"
 	"kraftkit.sh/internal/set"
@@ -860,7 +862,18 @@ func (ocipack *ociPackage) Pull(ctx context.Context, opts ...pack.PullOption) er
 	}
 
 	// The digest for index has now changed following a pull.  Figure out the new
-	// manifest by using the
+	// manifest by using the platform checksum to identify the correct manifest.
+	index, err := ocipack.handle.ResolveIndex(ctx, ocipack.imageRef())
+	if err != nil {
+		return fmt.Errorf("could not resolve index after pull: %w", err)
+	}
+	ocipack.index, err = NewIndexFromSpec(ctx, ocipack.handle, index)
+	if err != nil {
+		return fmt.Errorf("could not instantiate index from spec: %w", err)
+	}
+
+	// Calculate the platform checksum for the existing manifest, and compare
+	// against the manifests which are now available in the index.
 	existingChecksum, err := ociutils.PlatformChecksum(ocipack.imageRef(), ocipack.manifest.desc.Platform)
 	if err != nil {
 		return fmt.Errorf("calculating checksum for '%s': %w", ocipack.imageRef(), err)
@@ -1016,6 +1029,146 @@ func (ocipack *ociPackage) Save(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// Export implements pack.Package
+func (ocipack *ociPackage) Export(ctx context.Context, path string) error {
+	if ocipack.manifest == nil || ocipack.manifest.manifest == nil {
+		return fmt.Errorf("no manifest available to export")
+	}
+
+	// Create a temporary directory for the OCI layout
+	tempDir, err := os.MkdirTemp("", "oci-export-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temporary directory: %w", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Create the OCI layout file
+	ociLayoutPath := filepath.Join(tempDir, "oci-layout")
+	ociLayout := map[string]interface{}{
+		"imageLayoutVersion": "1.0.0",
+	}
+	ociLayoutData, err := json.Marshal(ociLayout)
+	if err != nil {
+		return fmt.Errorf("failed to marshal oci-layout: %w", err)
+	}
+	if err := os.WriteFile(ociLayoutPath, ociLayoutData, 0o644); err != nil {
+		return fmt.Errorf("failed to write oci-layout file: %w", err)
+	}
+
+	// Create blobs directory
+	blobsDir := filepath.Join(tempDir, "blobs")
+	if err := os.MkdirAll(blobsDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create blobs directory: %w", err)
+	}
+
+	// Get the OCI manifest
+	manifest := ocipack.manifest.manifest
+
+	// Export image configuration blob
+	configDigest := manifest.Config.Digest
+	configAlgo := configDigest.Algorithm().String()
+	configHash := configDigest.Encoded()
+
+	configBlobDir := filepath.Join(blobsDir, configAlgo)
+	if err := os.MkdirAll(configBlobDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create config blob directory: %w", err)
+	}
+
+	configPath := filepath.Join(configBlobDir, configHash)
+	configData, err := json.Marshal(ocipack.manifest.config)
+	if err != nil {
+		return fmt.Errorf("failed to resolve image config: %w", err)
+	}
+
+	if err := os.WriteFile(configPath, configData, 0o644); err != nil {
+		return fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	// Export layer blobs
+	for _, layer := range ocipack.manifest.manifest.Layers {
+		layerDigest := layer.Digest
+		layerAlgo := layerDigest.Algorithm().String()
+		layerHash := layerDigest.Encoded()
+
+		layerBlobDir := filepath.Join(blobsDir, layerAlgo)
+		if err := os.MkdirAll(layerBlobDir, 0o755); err != nil {
+			return fmt.Errorf("failed to create layer blob directory: %w", err)
+		}
+
+		layerPath := filepath.Join(layerBlobDir, layerHash)
+
+		// Check if layer file already exists (avoid duplicates)
+		if _, err := os.Stat(layerPath); err == nil {
+			continue
+		}
+
+		layerData, err := ocipack.handle.ReadDigest(ctx, layerDigest)
+		if err != nil {
+			return fmt.Errorf("failed to resolve layer '%s' content: %w", layerDigest.String(), err)
+		}
+
+		dst, err := os.Create(layerPath)
+		if err != nil {
+			return fmt.Errorf("failed to create file: %v", err)
+		}
+
+		defer dst.Close()
+
+		if _, err := io.Copy(dst, layerData); err != nil {
+			return fmt.Errorf("failed to copy: %v", err)
+		}
+	}
+
+	// Export manifest blob
+	manifestData, err := json.Marshal(manifest)
+	if err != nil {
+		return fmt.Errorf("failed to marshal manifest: %w", err)
+	}
+
+	manifestDigest := digest.FromBytes(manifestData)
+	manifestAlgo := manifestDigest.Algorithm().String()
+	manifestHash := manifestDigest.Encoded()
+
+	manifestBlobDir := filepath.Join(blobsDir, manifestAlgo)
+	if err := os.MkdirAll(manifestBlobDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create manifest blob directory: %w", err)
+	}
+
+	manifestBlobPath := filepath.Join(manifestBlobDir, manifestHash)
+	if err := os.WriteFile(manifestBlobPath, manifestData, 0o644); err != nil {
+		return fmt.Errorf("failed to write manifest blob: %w", err)
+	}
+
+	indexData, err := ocipack.handle.ReadDigest(ctx, ocipack.index.desc.Digest)
+	if err != nil {
+		return fmt.Errorf("failed to resolve layer '%s' content: %w", ocipack.index.desc.Digest.String(), err)
+	}
+
+	indexPath := filepath.Join(tempDir, "index.json")
+	dst, err := os.Create(indexPath)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %v", err)
+	}
+
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, indexData); err != nil {
+		return fmt.Errorf("failed to copy: %v", err)
+	}
+
+	// Create tarball from the OCI layout directory
+	log.G(ctx).WithFields(logrus.Fields{
+		"dest": path,
+	}).Debug("creating export tarball")
+
+	// Create all parent directories if they do not exist.
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("creating parent directories for tarball: %w", err)
+	}
+
+	return archive.TarDir(ctx, tempDir, "", path)
 }
 
 // Pull implements pack.Package
