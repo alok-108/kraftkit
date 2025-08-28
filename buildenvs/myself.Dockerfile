@@ -3,7 +3,7 @@
 # Licensed under the BSD-3-Clause License (the "License").
 # You may not use this file except in compliance with the License.
 
-ARG DEBIAN_VERSION=trixie-20250203
+ARG DEBIAN_VERSION=trixie
 ARG XEN_VERSION=4.19
 ARG REGISTRY=kraftkit.sh
 

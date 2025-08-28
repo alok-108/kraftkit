@@ -5,7 +5,7 @@
 ARG REGISTRY=kraftkit.sh
 ARG GO_VERSION=1.25.0
 
-FROM golang:${GO_VERSION}-bookworm AS golang
+FROM golang:${GO_VERSION}-trixie AS golang
 FROM ${REGISTRY}/base:latest
 
 COPY --from=golang /usr/local/go /usr/local/go
