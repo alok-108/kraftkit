@@ -102,6 +102,11 @@ func (p *packagerKraftfileUnikraft) Pack(ctx context.Context, opts *PkgOptions, 
 			"CONFIG_LIBVFSCORE_ROOTFS_EINITRD", // Deprecated
 			"CONFIG_LIBVFSCORE_AUTOMOUNT_EINITRD",
 			"CONFIG_LIBVFSCORE_AUTOMOUNT_CI_EINITRD",
+			"CONFIG_LIBVFSCORE_AUTOMOUNT_EINITRD_PATH",
+			"CONFIG_LIBPOSIX_VFS_FSTAB_EINITRD",
+			"CONFIG_LIBPOSIX_VFS_FSTAB_EINITRD_PATH",
+			"CONFIG_LIBPOSIX_VFS_FSTAB_BUILTIN_EINITRD",
+			"CONFIG_LIBPOSIX_VFS_FSTAB_FALLBACK_EINITRD",
 		) {
 			if rootfs, cmds, envs, err = utils.BuildRootfs(ctx, opts.Workdir, opts.Rootfs, opts.Compress, targ.Architecture().String()); err != nil {
 				return nil, fmt.Errorf("could not build rootfs: %w", err)
