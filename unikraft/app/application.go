@@ -236,7 +236,10 @@ func (app *application) Libraries(ctx context.Context) (map[string]*lib.LibraryC
 		return nil, err
 	}
 
-	libs := app.libraries
+	libs := map[string]*lib.LibraryConfig{}
+	for key, lib := range app.libraries {
+		libs[key] = lib
+	}
 
 	for _, uklib := range uklibs {
 		libs[uklib.Name()] = uklib
