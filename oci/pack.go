@@ -1168,7 +1168,14 @@ func (ocipack *ociPackage) Export(ctx context.Context, path string) error {
 		return fmt.Errorf("creating parent directories for tarball: %w", err)
 	}
 
-	return archive.TarDir(ctx, tempDir, "", path)
+	switch {
+	case strings.HasSuffix(path, ".tar.gz") || strings.HasSuffix(path, ".tgz"):
+		return archive.TarDir(ctx, tempDir, "", path, archive.WithGzip(true))
+	case strings.HasSuffix(path, ".tar"):
+		return archive.TarDir(ctx, tempDir, "", path)
+	default:
+		return fmt.Errorf("export path must end with .tar or .tar.gz")
+	}
 }
 
 // Pull implements pack.Package
