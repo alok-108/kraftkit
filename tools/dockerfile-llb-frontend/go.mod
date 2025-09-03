@@ -214,7 +214,7 @@ require (
 	github.com/tonistiigi/go-csvvalue v0.0.0-20240710180619-ddb21b71c0b4 // indirect
 	github.com/tonistiigi/units v0.0.0-20180711220420-6950e57a87ea // indirect
 	github.com/tonistiigi/vt100 v0.0.0-20240514184818-90bafcd6abab // indirect
-	github.com/ulikunitz/xz v0.5.12 // indirect
+	github.com/ulikunitz/xz v0.5.14 // indirect
 	github.com/vbatts/tar-split v0.11.7 // indirect
 	github.com/vbauerster/mpb/v8 v8.9.1 // indirect
 	github.com/vishvananda/netlink v1.3.1-0.20240922070040-084abd93d350 // indirect
