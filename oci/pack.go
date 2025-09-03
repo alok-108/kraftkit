@@ -733,8 +733,8 @@ func (ocipack *ociPackage) Columns() []tableprinter.Column {
 	}
 
 	return []tableprinter.Column{
-		{Name: "manifest", Value: ocipack.manifest.desc.Digest.String()[7:14]},
-		{Name: "index", Value: ocipack.index.desc.Digest.String()[7:14]},
+		{Name: "manifest", Value: ocipack.manifest.desc.Digest.String()[7:]},
+		{Name: "index", Value: ocipack.index.desc.Digest.String()[7:]},
 		{Name: "plat", Value: fmt.Sprintf("%s/%s", ocipack.Platform().Name(), ocipack.Architecture().Name())},
 		{Name: "size", Value: size},
 	}
