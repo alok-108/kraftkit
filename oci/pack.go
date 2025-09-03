@@ -863,7 +863,7 @@ func (ocipack *ociPackage) Pull(ctx context.Context, opts ...pack.PullOption) er
 
 	// The digest for index has now changed following a pull.  Figure out the new
 	// manifest by using the platform checksum to identify the correct manifest.
-	index, err := ocipack.handle.ResolveIndex(ctx, ocipack.imageRef())
+	index, _, err := ocipack.handle.ResolveIndex(ctx, ocipack.imageRef())
 	if err != nil {
 		return fmt.Errorf("could not resolve index after pull: %w", err)
 	}
@@ -990,7 +990,7 @@ func (ocipack *ociPackage) Delete(ctx context.Context) error {
 		return fmt.Errorf("could not delete package manifest: %w", err)
 	}
 
-	indexDesc, err := ocipack.handle.ResolveIndex(ctx, ocipack.imageRef())
+	indexDesc, _, err := ocipack.handle.ResolveIndex(ctx, ocipack.imageRef())
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return fmt.Errorf("could not resolve index: %w", err)
 	} else if indexDesc == nil {

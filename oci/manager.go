@@ -794,7 +794,7 @@ func (manager *OCIManager) IsCompatible(ctx context.Context, source string, qopt
 	// Check if the provided source is a fully qualified OCI reference
 	isLocalImage := func(source string) bool {
 		// First try without known registries
-		if _, err := handle.ResolveIndex(ctx, source); err == nil {
+		if _, _, err := handle.ResolveIndex(ctx, source); err == nil {
 			return true
 		}
 
@@ -808,7 +808,7 @@ func (manager *OCIManager) IsCompatible(ctx context.Context, source string, qopt
 				continue
 			}
 
-			if _, err := handle.ResolveIndex(ctx, ref.Context().String()); err == nil {
+			if _, _, err := handle.ResolveIndex(ctx, ref.Context().String()); err == nil {
 				return true
 			}
 		}

@@ -6,6 +6,7 @@ package handler
 
 import (
 	"archive/tar"
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -1068,7 +1069,7 @@ func (handle *DirectoryHandler) DeleteManifest(ctx context.Context, fullref stri
 
 	// Update the index manifest such that the specific manifests do not exit.  If
 	// there are no more manifests in the index, also remove the index.
-	index, err := handle.ResolveIndex(ctx, fullref)
+	index, _, err := handle.ResolveIndex(ctx, fullref)
 	if err != nil {
 		return fmt.Errorf("could not resolve index from manifest: %w", err)
 	}
@@ -1139,14 +1140,14 @@ func (handle *DirectoryHandler) DeleteManifest(ctx context.Context, fullref stri
 }
 
 // ResolveIndex implements IndexResolver.
-func (handle *DirectoryHandler) ResolveIndex(ctx context.Context, fullref string) (*ocispec.Index, error) {
+func (handle *DirectoryHandler) ResolveIndex(ctx context.Context, fullref string) (*ocispec.Index, digest.Digest, error) {
 	// Find the index of this image
 	ref, err := name.ParseReference(fullref,
 		name.WithDefaultRegistry(""),
 		name.WithDefaultTag("latest"),
 	)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	var indexPath string
@@ -1167,29 +1168,34 @@ func (handle *DirectoryHandler) ResolveIndex(ctx context.Context, fullref string
 
 	// Check whether the index exists
 	if _, err := os.Stat(indexPath); err != nil {
-		return nil, fmt.Errorf("index '%s' not found", ref.Name())
+		return nil, "", fmt.Errorf("index '%s' not found", ref.Name())
 	}
 
 	// Read the index
 	reader, err := os.Open(indexPath)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	defer reader.Close()
 
 	indexRaw, err := io.ReadAll(reader)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// Unmarshal the index
 	index := ocispec.Index{}
 	if err = json.Unmarshal(indexRaw, &index); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return &index, nil
+	h, _, err := v1.SHA256(bytes.NewReader(indexRaw))
+	if err != nil {
+		return nil, "", err
+	}
+
+	return &index, digest.Digest(h.String()), nil
 }
 
 // ListIndexes implements IndexLister.
