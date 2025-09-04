@@ -683,7 +683,7 @@ func (ocipack *ociPackage) Name() string {
 
 // ID implements pack.Package
 func (ocipack *ociPackage) ID() string {
-	return fmt.Sprintf("%s@%s", ocipack.Name(), ocipack.index.desc.Digest.String())
+	return fmt.Sprintf("%s@%s", ocipack.Name(), ocipack.manifest.desc.Digest.String())
 }
 
 // Name implements fmt.Stringer
