@@ -97,10 +97,6 @@ func (opts *ImportOptions) Pre(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("port must be between 1024 and 65535")
 	}
 
-	if finfo, err := os.Stat(opts.Source); err == nil && (!finfo.IsDir() && !strings.HasSuffix(opts.Source, "Dockerfile")) {
-		return fmt.Errorf("local source path must be a directory or a Dockerfile")
-	}
-
 	err := utils.PopulateMetroToken(cmd, &opts.Metro, &opts.Token, &opts.AllowInsecure)
 	if err != nil {
 		return fmt.Errorf("could not populate metro and token: %w", err)
