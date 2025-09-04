@@ -1159,12 +1159,16 @@ func (handle *DirectoryHandler) ResolveIndex(ctx context.Context, fullref string
 	}
 
 	var indexPath string
-	if strings.Contains(fullref, "@") {
+	if _, dgst, ok := strings.Cut(fullref, "@"); ok {
+		algo, sum, ok := strings.Cut(dgst, ":")
+		if !ok {
+			return nil, "", fmt.Errorf("malformed digest in reference '%s'", fullref)
+		}
 		indexPath = filepath.Join(
 			handle.path,
-			DirectoryHandlerIndexesDir,
-			// TODO: Do not hardcode
-			strings.ReplaceAll(ref.Name(), "@"+digest.SHA256.String()+":", string(filepath.Separator)),
+			DirectoryHandlerDigestsDir,
+			algo,
+			sum,
 		)
 	} else {
 		indexPath = filepath.Join(
