@@ -29,6 +29,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/opencontainers/go-digest"
+	specs "github.com/opencontainers/image-spec/specs-go"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
@@ -621,7 +622,50 @@ func NewPackageFromOCIManifestDigest(ctx context.Context, handle handler.Handler
 			// Re-attempt by fetching remotely.
 			ocipack.index, ocipack.manifest, err = newIndexAndManifestFromRemoteDigest(ctx, handle, ref, auths, dgst)
 			if err != nil {
-				return nil, fmt.Errorf("could not instantiate index and manifest from remote digest: %w", err)
+				log.G(ctx).
+					Debugf("could not instantiate index and manifest from remote digest: %s", err)
+
+				// Maybe this is a standalone manifest without an index?
+				manifest, err := NewManifestFromDigest(ctx, handle, dgst)
+				if err != nil {
+					return nil, fmt.Errorf("could not instantiate manifest from digest: %w", err)
+				}
+
+				// Since we only have the manifest, create a new index and add the
+				// manifest to it.
+
+				ocipack.manifest = manifest
+				ocipack.index, _ = NewIndex(ctx, handle)
+				ocipack.index.manifests = []*Manifest{ocipack.manifest}
+				ocipack.index.annotations = manifest.annotations
+				manifestDescs := make([]ocispec.Descriptor, len(ocipack.index.manifests))
+
+				for i, manifest := range ocipack.index.manifests {
+					manifestDescs[i] = *manifest.desc
+				}
+
+				// Generate the final manifest
+				ocipack.index.index = &ocispec.Index{
+					MediaType: ocispec.MediaTypeImageIndex,
+					Versioned: specs.Versioned{
+						SchemaVersion: 2,
+					},
+					Manifests:   manifestDescs,
+					Annotations: ocipack.index.annotations,
+				}
+
+				indexJson, err := json.Marshal(ocipack.index.index)
+				if err != nil {
+					return nil, fmt.Errorf("failed to marshal manifest: %w", err)
+				}
+
+				// Generate a new descriptor
+				indexDesc := content.NewDescriptorFromBytes(
+					ocispec.MediaTypeImageIndex,
+					indexJson,
+				)
+				indexDesc.Annotations = ocipack.index.annotations
+				ocipack.index.desc = &indexDesc
 			}
 		} else {
 			manifest, err := NewManifestFromDigest(ctx, handle, dgst)
