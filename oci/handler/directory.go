@@ -1202,6 +1202,10 @@ func (handle *DirectoryHandler) ResolveIndex(ctx context.Context, fullref string
 		return nil, "", err
 	}
 
+	if index.MediaType != ocispec.MediaTypeImageIndex {
+		return nil, "", fmt.Errorf("referenced index '%s' is not an index", ref.Name())
+	}
+
 	h, _, err := v1.SHA256(bytes.NewReader(indexRaw))
 	if err != nil {
 		return nil, "", err
