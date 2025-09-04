@@ -1141,21 +1141,21 @@ func (ocipack *ociPackage) Export(ctx context.Context, path string) error {
 		return fmt.Errorf("failed to write manifest blob: %w", err)
 	}
 
-	indexData, err := ocipack.handle.ReadDigest(ctx, ocipack.index.desc.Digest)
-	if err != nil {
-		return fmt.Errorf("failed to resolve layer '%s' content: %w", ocipack.index.desc.Digest.String(), err)
-	}
-
 	indexPath := filepath.Join(tempDir, "index.json")
-	dst, err := os.Create(indexPath)
+	indexData, err := json.Marshal(ocipack.index.index)
 	if err != nil {
-		return fmt.Errorf("failed to create file: %v", err)
+		return fmt.Errorf("failed to marshal index: %w", err)
 	}
 
-	defer dst.Close()
+	indexFile, err := os.OpenFile(indexPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o664)
+	if err != nil {
+		return fmt.Errorf("could not open index file: %w", err)
+	}
 
-	if _, err := io.Copy(dst, indexData); err != nil {
-		return fmt.Errorf("failed to copy: %v", err)
+	defer indexFile.Close()
+
+	if _, err := indexFile.Write(indexData); err != nil {
+		return fmt.Errorf("failed to write index file: %w", err)
 	}
 
 	// Create tarball from the OCI layout directory
