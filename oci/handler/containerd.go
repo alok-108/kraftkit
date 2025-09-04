@@ -319,7 +319,7 @@ func (handle *ContainerdHandler) SaveDescriptor(ctx context.Context, fullref str
 			return err
 		}
 
-		if existingIndex, err := handle.ResolveIndex(ctx, fullref); err == nil {
+		if existingIndex, _, err := handle.ResolveIndex(ctx, fullref); err == nil {
 			existingIndexJson, err := json.Marshal(existingIndex)
 			if err != nil {
 				return fmt.Errorf("could not marshal existing index: %w", err)
@@ -521,10 +521,10 @@ func (handle *ContainerdHandler) DeleteManifest(ctx context.Context, fullref str
 }
 
 // ResolveIndex implements IndexResolver.
-func (handle *ContainerdHandler) ResolveIndex(ctx context.Context, fullref string) (*ocispec.Index, error) {
+func (handle *ContainerdHandler) ResolveIndex(ctx context.Context, fullref string) (*ocispec.Index, digest.Digest, error) {
 	ctx, done, err := handle.lease(ctx)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	defer func() {
@@ -533,7 +533,7 @@ func (handle *ContainerdHandler) ResolveIndex(ctx context.Context, fullref strin
 
 	images, err := handle.client.ImageService().List(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("could not get list of images: %w", err)
+		return nil, "", fmt.Errorf("could not get list of images: %w", err)
 	}
 
 	var indexDigest *digest.Digest
@@ -547,7 +547,7 @@ func (handle *ContainerdHandler) ResolveIndex(ctx context.Context, fullref strin
 	}
 
 	if indexDigest == nil {
-		return nil, fmt.Errorf("index '%s' not found", fullref)
+		return nil, "", fmt.Errorf("index '%s' not found", fullref)
 	}
 
 	cs := handle.client.ContentStore()
@@ -579,10 +579,10 @@ func (handle *ContainerdHandler) ResolveIndex(ctx context.Context, fullref strin
 
 		return nil
 	}); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return &index, nil
+	return &index, "", nil
 }
 
 // ListIndexes implements IndexLister.

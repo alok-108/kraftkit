@@ -29,6 +29,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/opencontainers/go-digest"
+	specs "github.com/opencontainers/image-spec/specs-go"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
@@ -621,7 +622,50 @@ func NewPackageFromOCIManifestDigest(ctx context.Context, handle handler.Handler
 			// Re-attempt by fetching remotely.
 			ocipack.index, ocipack.manifest, err = newIndexAndManifestFromRemoteDigest(ctx, handle, ref, auths, dgst)
 			if err != nil {
-				return nil, fmt.Errorf("could not instantiate index and manifest from remote digest: %w", err)
+				log.G(ctx).
+					Debugf("could not instantiate index and manifest from remote digest: %s", err)
+
+				// Maybe this is a standalone manifest without an index?
+				manifest, err := NewManifestFromDigest(ctx, handle, dgst)
+				if err != nil {
+					return nil, fmt.Errorf("could not instantiate manifest from digest: %w", err)
+				}
+
+				// Since we only have the manifest, create a new index and add the
+				// manifest to it.
+
+				ocipack.manifest = manifest
+				ocipack.index, _ = NewIndex(ctx, handle)
+				ocipack.index.manifests = []*Manifest{ocipack.manifest}
+				ocipack.index.annotations = manifest.annotations
+				manifestDescs := make([]ocispec.Descriptor, len(ocipack.index.manifests))
+
+				for i, manifest := range ocipack.index.manifests {
+					manifestDescs[i] = *manifest.desc
+				}
+
+				// Generate the final manifest
+				ocipack.index.index = &ocispec.Index{
+					MediaType: ocispec.MediaTypeImageIndex,
+					Versioned: specs.Versioned{
+						SchemaVersion: 2,
+					},
+					Manifests:   manifestDescs,
+					Annotations: ocipack.index.annotations,
+				}
+
+				indexJson, err := json.Marshal(ocipack.index.index)
+				if err != nil {
+					return nil, fmt.Errorf("failed to marshal manifest: %w", err)
+				}
+
+				// Generate a new descriptor
+				indexDesc := content.NewDescriptorFromBytes(
+					ocispec.MediaTypeImageIndex,
+					indexJson,
+				)
+				indexDesc.Annotations = ocipack.index.annotations
+				ocipack.index.desc = &indexDesc
 			}
 		} else {
 			manifest, err := NewManifestFromDigest(ctx, handle, dgst)
@@ -683,7 +727,7 @@ func (ocipack *ociPackage) Name() string {
 
 // ID implements pack.Package
 func (ocipack *ociPackage) ID() string {
-	return fmt.Sprintf("%s@%s", ocipack.Name(), ocipack.index.desc.Digest.String())
+	return fmt.Sprintf("%s@%s", ocipack.Name(), ocipack.manifest.desc.Digest.String())
 }
 
 // Name implements fmt.Stringer
@@ -863,7 +907,7 @@ func (ocipack *ociPackage) Pull(ctx context.Context, opts ...pack.PullOption) er
 
 	// The digest for index has now changed following a pull.  Figure out the new
 	// manifest by using the platform checksum to identify the correct manifest.
-	index, err := ocipack.handle.ResolveIndex(ctx, ocipack.imageRef())
+	index, _, err := ocipack.handle.ResolveIndex(ctx, ocipack.imageRef())
 	if err != nil {
 		return fmt.Errorf("could not resolve index after pull: %w", err)
 	}
@@ -990,7 +1034,7 @@ func (ocipack *ociPackage) Delete(ctx context.Context) error {
 		return fmt.Errorf("could not delete package manifest: %w", err)
 	}
 
-	indexDesc, err := ocipack.handle.ResolveIndex(ctx, ocipack.imageRef())
+	indexDesc, _, err := ocipack.handle.ResolveIndex(ctx, ocipack.imageRef())
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return fmt.Errorf("could not resolve index: %w", err)
 	} else if indexDesc == nil {
@@ -1141,21 +1185,21 @@ func (ocipack *ociPackage) Export(ctx context.Context, path string) error {
 		return fmt.Errorf("failed to write manifest blob: %w", err)
 	}
 
-	indexData, err := ocipack.handle.ReadDigest(ctx, ocipack.index.desc.Digest)
-	if err != nil {
-		return fmt.Errorf("failed to resolve layer '%s' content: %w", ocipack.index.desc.Digest.String(), err)
-	}
-
 	indexPath := filepath.Join(tempDir, "index.json")
-	dst, err := os.Create(indexPath)
+	indexData, err := json.Marshal(ocipack.index.index)
 	if err != nil {
-		return fmt.Errorf("failed to create file: %v", err)
+		return fmt.Errorf("failed to marshal index: %w", err)
 	}
 
-	defer dst.Close()
+	indexFile, err := os.OpenFile(indexPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o664)
+	if err != nil {
+		return fmt.Errorf("could not open index file: %w", err)
+	}
 
-	if _, err := io.Copy(dst, indexData); err != nil {
-		return fmt.Errorf("failed to copy: %v", err)
+	defer indexFile.Close()
+
+	if _, err := indexFile.Write(indexData); err != nil {
+		return fmt.Errorf("failed to write index file: %w", err)
 	}
 
 	// Create tarball from the OCI layout directory

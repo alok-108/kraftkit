@@ -82,7 +82,7 @@ func NewIndexFromSpec(ctx context.Context, handle handler.Handler, spec *ocispec
 // NewIndexFromRef instantiates a new index using the provided reference which
 // is used by the handle to look up any local existing indexes.
 func NewIndexFromRef(ctx context.Context, handle handler.Handler, ref string) (*Index, error) {
-	spec, err := handle.ResolveIndex(ctx, ref)
+	spec, _, err := handle.ResolveIndex(ctx, ref)
 	if err != nil {
 		return nil, fmt.Errorf("cannot instantiate index from unknown reference '%s'", ref)
 	}

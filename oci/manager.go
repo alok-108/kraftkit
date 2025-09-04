@@ -21,6 +21,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
+	"github.com/opencontainers/go-digest"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"kraftkit.sh/config"
@@ -375,7 +376,11 @@ func (manager *OCIManager) Catalog(ctx context.Context, qopts ...packmanager.Que
 			return nil, fmt.Errorf("query name is not glob-able: %w", err)
 		}
 	} else if !strings.ContainsRune(qname, ':') && len(query.Version()) > 0 {
-		qname = fmt.Sprintf("%s:%s", qname, query.Version())
+		if strings.Contains(query.Version(), ":") {
+			qname = fmt.Sprintf("%s@%s", qname, query.Version())
+		} else {
+			qname = fmt.Sprintf("%s:%s", qname, query.Version())
+		}
 	}
 
 	qversion := query.Version()
@@ -399,7 +404,13 @@ func (manager *OCIManager) Catalog(ctx context.Context, qopts ...packmanager.Que
 	// No default registry found, re-parse with
 	if ref != nil && ref.Context().RegistryStr() == "" {
 		unsetRegistry = true
-		ref, refErr = name.ParseReference(fmt.Sprintf("%s:%s", qname, qversion),
+		var formatRef string
+		if strings.Contains(qversion, ":") {
+			formatRef = fmt.Sprintf("%s@%s", qname, qversion)
+		} else {
+			formatRef = fmt.Sprintf("%s:%s", qname, qversion)
+		}
+		ref, refErr = name.ParseReference(formatRef,
 			name.WithDefaultRegistry(DefaultRegistry),
 			name.WithDefaultTag(DefaultTag),
 		)
@@ -498,7 +509,14 @@ func (manager *OCIManager) Catalog(ctx context.Context, qopts ...packmanager.Que
 			for checksum, pack := range more {
 				total++
 
-				ref, err := name.ParseReference(fmt.Sprintf("%s:%s", pack.Name(), pack.Version()))
+				var formattedRef string
+				if strings.HasPrefix(pack.Version(), "sha256:") {
+					formattedRef = fmt.Sprintf("%s@%s", pack.Name(), pack.Version())
+				} else {
+					formattedRef = fmt.Sprintf("%s:%s", pack.Name(), pack.Version())
+				}
+
+				ref, err := name.ParseReference(formattedRef)
 				if err != nil {
 					log.G(ctx).
 						WithField("ref", pack.Name()).
@@ -522,9 +540,16 @@ func (manager *OCIManager) Catalog(ctx context.Context, qopts ...packmanager.Que
 					continue
 				} else if qglob == nil {
 					if len(qversion) > 0 && len(qname) > 0 {
-						if fullref != fmt.Sprintf("%s:%s", qname, qversion) {
+						var formattedRef string
+						if strings.HasPrefix(query.Version(), "sha256:") {
+							formattedRef = fmt.Sprintf("%s@%s", qname, qversion)
+						} else {
+							formattedRef = fmt.Sprintf("%s:%s", qname, qversion)
+						}
+
+						if fullref != formattedRef {
 							log.G(ctx).
-								WithField("want", fmt.Sprintf("%s:%s", qname, qversion)).
+								WithField("want", formattedRef).
 								WithField("got", fullref).
 								Trace("skipping manifest: name does not match")
 							continue
@@ -550,27 +575,72 @@ resolveLocalIndex:
 	// If the query is local and the reference is a fully qualified OCI reference,
 	// attempt to resolve the exact index and generate packages from it.
 	if query.Local() && len(qversion) > 0 && len(qname) > 0 {
-		oref := fmt.Sprintf("%s:%s", qname, qversion)
-		index, err := handle.ResolveIndex(ctx, oref)
+		var oref string
+		if strings.Contains(qversion, ":") {
+			oref = fmt.Sprintf("%s@%s", qname, qversion)
+		} else {
+			oref = fmt.Sprintf("%s:%s", qname, qversion)
+		}
+
+		// First check if the oref refers to an index.
+		index, _, err := handle.ResolveIndex(ctx, oref)
 		if err != nil {
 			log.G(ctx).
 				WithField("ref", oref).
 				Trace("could not resolve exact index")
-			goto searchLocalIndexes
-		}
 
-		for checksum, pack := range processV1IndexManifests(ctx,
-			handle,
-			oref,
-			query,
-			index.Manifests,
-		) {
-			log.G(ctx).
-				WithField("ref", pack.ID()).
-				WithField("via", "local").
-				Trace("found")
-			packs[checksum] = pack
-			total++
+			// The oref did not refer to an index. Maybe it refers to a manifest.
+			// This is only possible if the qversion is an actual digest.
+			if strings.Contains(qversion, ":") {
+				dgst, err := digest.Parse(qversion)
+				if err != nil {
+					goto searchLocalIndexes
+				}
+
+				manifest, _, err := handle.ResolveManifest(ctx, oref, dgst)
+				if err != nil {
+					goto searchLocalIndexes
+				}
+
+				for checksum, pack := range processV1IndexManifests(ctx,
+					handle,
+					oref,
+					query,
+					[]ocispec.Descriptor{
+						{
+							MediaType:   manifest.MediaType,
+							Digest:      dgst,
+							Platform:    manifest.Config.Platform,
+							Annotations: manifest.Annotations,
+						},
+					},
+				) {
+					log.G(ctx).
+						WithField("ref", pack.ID()).
+						WithField("via", "local").
+						Trace("found")
+					packs[checksum] = pack
+					total++
+				}
+
+			} else {
+				goto searchLocalIndexes
+			}
+		}
+		if index != nil {
+			for checksum, pack := range processV1IndexManifests(ctx,
+				handle,
+				oref,
+				query,
+				index.Manifests,
+			) {
+				log.G(ctx).
+					WithField("ref", pack.ID()).
+					WithField("via", "local").
+					Trace("found")
+				packs[checksum] = pack
+				total++
+			}
 		}
 
 		// If the register was set, then an exact local index lookup was expected so
@@ -601,7 +671,13 @@ searchLocalIndexes:
 				continue
 			}
 
-			fullref := fmt.Sprintf("%s:%s", ref.Context().RepositoryStr(), ref.Identifier())
+			var fullref string
+			if strings.ContainsRune(qversion, ':') {
+				_, dgst, _ := handle.ResolveIndex(ctx, oref)
+				fullref = fmt.Sprintf("%s@%s", ref.Context().RepositoryStr(), dgst)
+			} else {
+				fullref = fmt.Sprintf("%s:%s", ref.Context().RepositoryStr(), ref.Identifier())
+			}
 
 			// If the query did specify a registry include this in check otherwise
 			// search for indexes without this as prefix.
@@ -626,9 +702,15 @@ searchLocalIndexes:
 				continue
 			} else if qglob == nil {
 				if len(qversion) > 0 && len(qname) > 0 {
-					if fullref != fmt.Sprintf("%s:%s", qname, qversion) {
+					var formattedRef string
+					if strings.ContainsRune(qversion, ':') {
+						formattedRef = fmt.Sprintf("%s@%s", qname, qversion)
+					} else {
+						formattedRef = fmt.Sprintf("%s:%s", qname, qversion)
+					}
+					if fullref != formattedRef {
 						log.G(ctx).
-							WithField("want", fmt.Sprintf("%s:%s", qname, qversion)).
+							WithField("want", formattedRef).
 							WithField("got", fullref).
 							Trace("skipping index: name does not match")
 						total += len(index.Manifests)
@@ -794,7 +876,7 @@ func (manager *OCIManager) IsCompatible(ctx context.Context, source string, qopt
 	// Check if the provided source is a fully qualified OCI reference
 	isLocalImage := func(source string) bool {
 		// First try without known registries
-		if _, err := handle.ResolveIndex(ctx, source); err == nil {
+		if _, _, err := handle.ResolveIndex(ctx, source); err == nil {
 			return true
 		}
 
@@ -808,7 +890,7 @@ func (manager *OCIManager) IsCompatible(ctx context.Context, source string, qopt
 				continue
 			}
 
-			if _, err := handle.ResolveIndex(ctx, ref.Context().String()); err == nil {
+			if _, _, err := handle.ResolveIndex(ctx, ref.Context().String()); err == nil {
 				return true
 			}
 		}

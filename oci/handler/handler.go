@@ -72,7 +72,7 @@ type IndexLister interface {
 }
 
 type IndexResolver interface {
-	ResolveIndex(context.Context, string) (*ocispec.Index, error)
+	ResolveIndex(context.Context, string) (*ocispec.Index, digest.Digest, error)
 }
 
 type IndexDeleter interface {
