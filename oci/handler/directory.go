@@ -348,6 +348,14 @@ func (handle *DirectoryHandler) PullDigest(ctx context.Context, mediaType, fullr
 				return fmt.Errorf("could not make parent directory: %w", err)
 			}
 
+			// Remove any existing tag path if it already exists, as we are now
+			// pointing it to a new index.
+			if _, err := os.Stat(indexTagPath); err == nil {
+				if err := os.RemoveAll(indexTagPath); err != nil {
+					return fmt.Errorf("could not remove existing index tag path: %w", err)
+				}
+			}
+
 			if err := os.Symlink(newIndexDigestPath, indexTagPath); err != nil {
 				return err
 			}
