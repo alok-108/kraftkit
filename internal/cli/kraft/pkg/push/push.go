@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/dustin/go-humanize"
@@ -116,6 +117,10 @@ func (opts *PushOptions) Run(ctx context.Context, args []string) error {
 	} else {
 		// Argument is a reference name
 		ref = args[0]
+	}
+
+	if !strings.Contains(ref, ":") {
+		ref = fmt.Sprintf("%s:latest", ref)
 	}
 
 	var pm packmanager.PackageManager
