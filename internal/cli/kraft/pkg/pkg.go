@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/dustin/go-humanize"
@@ -212,6 +213,13 @@ func Pkg(ctx context.Context, opts *PkgOptions, args ...string) ([]pack.Package,
 
 		for _, p := range packs {
 			p := p
+
+			if !strings.Contains(p.Name(), ":") {
+				log.G(ctx).
+					WithField("package", p.Name()).
+					Warn("skip pushing package without a tag")
+				continue
+			}
 
 			processes = append(processes, processtree.NewProcessTreeItem(
 				"pushing",

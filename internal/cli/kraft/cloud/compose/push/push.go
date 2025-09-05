@@ -141,6 +141,10 @@ func Push(ctx context.Context, opts *PushOptions, args ...string) error {
 			)
 		}
 
+		if !strings.Contains(pkgName, ":") {
+			pkgName = fmt.Sprintf("%s:latest", pkgName)
+		}
+
 		packages, err := packmanager.G(ctx).Catalog(ctx,
 			packmanager.WithRemote(false),
 			packmanager.WithName(pkgName),
