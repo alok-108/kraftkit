@@ -214,7 +214,7 @@ func Pkg(ctx context.Context, opts *PkgOptions, args ...string) ([]pack.Package,
 		for _, p := range packs {
 			p := p
 
-			if !strings.Contains(p.Name(), ":") {
+			if !strings.Contains(p.Name(), ":") && p.Version() == "" {
 				log.G(ctx).
 					WithField("package", p.Name()).
 					Warn("skip pushing package without a tag")
