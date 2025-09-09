@@ -13,8 +13,8 @@ import (
 	"path/filepath"
 
 	"kraftkit.sh/archive"
-	"kraftkit.sh/cpio"
-	"kraftkit.sh/erofs"
+	"kraftkit.sh/fs/cpio"
+	"kraftkit.sh/fs/erofs"
 )
 
 type tarball struct {

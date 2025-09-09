@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"kraftkit.sh/archive"
-	"kraftkit.sh/cpio"
+	"kraftkit.sh/fs/cpio"
 	"kraftkit.sh/initrd"
 )
 

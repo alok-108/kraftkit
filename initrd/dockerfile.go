@@ -21,8 +21,8 @@ import (
 	"google.golang.org/grpc/status"
 	"kraftkit.sh/cmdfactory"
 	"kraftkit.sh/config"
-	"kraftkit.sh/cpio"
-	"kraftkit.sh/erofs"
+	"kraftkit.sh/fs/cpio"
+	"kraftkit.sh/fs/erofs"
 	"kraftkit.sh/log"
 
 	sfile "github.com/anchore/stereoscope/pkg/file"

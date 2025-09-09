@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"golang.org/x/mod/sumdb/dirhash"
-	"kraftkit.sh/erofs"
+	"kraftkit.sh/fs/erofs"
 
 	"github.com/stretchr/testify/require"
 )

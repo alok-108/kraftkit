@@ -21,6 +21,7 @@ import (
 	"github.com/anchore/stereoscope/pkg/filetree"
 	"github.com/anchore/stereoscope/pkg/filetree/filenode"
 
+	utils "kraftkit.sh/fs/utils"
 	"kraftkit.sh/log"
 )
 
@@ -32,7 +33,7 @@ type randSeq struct {
 // generate inode numbers for files in the CPIO archive.
 func (r *randSeq) Int32() int32 {
 	if r.number == 0 {
-		r.number = rand.Int32() % 3000 + 1000
+		r.number = rand.Int32()%3000 + 1000
 	} else {
 		r.number += 1
 	}
@@ -67,16 +68,16 @@ func CreateFS(ctx context.Context, output string, source string, opts ...CpioCre
 	}()
 
 	switch {
-	case IsOciArchive(source):
+	case utils.IsOciArchive(source):
 		if err := c.CreateFSFromOCIImage(ctx, writer, source); err != nil {
 			return fmt.Errorf("could not create CPIO archive from OCI image: %w", err)
 		}
-	case IsTarFile(source),
-		IsTarGzFile(source):
+	case utils.IsTarFile(source),
+		utils.IsTarGzFile(source):
 		if err := c.CreateFSFromTar(ctx, writer, source); err != nil {
 			return fmt.Errorf("could not create CPIO archive from tar file: %w", err)
 		}
-	case IsDirectory(source):
+	case utils.IsDirectory(source):
 		if err := c.CreateFSFromDirectory(ctx, writer, source); err != nil {
 			return fmt.Errorf("could not create CPIO archive from directory: %w", err)
 		}
@@ -84,10 +85,6 @@ func CreateFS(ctx context.Context, output string, source string, opts ...CpioCre
 		if err := c.CreateFSFromCpio(ctx, writer, source); err != nil {
 			return fmt.Errorf("could not create CPIO archive from CPIO file: %w", err)
 		}
-	// TODO: Decide if we want to stub this or just hide completely
-	// Stubbing would require duplicating the function already existing in erofs/utils.go
-	// We can't import as it would cause a circular dependency
-	// case IsErofsFile(source):
 	default:
 		return fmt.Errorf("unsupported source type: %s", source)
 	}
@@ -307,6 +304,7 @@ func (c *createOptions) CreateFSFromTar(ctx context.Context, writer *Writer, sou
 					Inode: fileCount[tarHeader.Linkname].Inode,
 				}
 			}
+		}
 	}
 
 	// Close the tarball and re-open it to read it again.

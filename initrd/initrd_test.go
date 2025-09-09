@@ -10,7 +10,7 @@ import (
 	"os"
 	"testing"
 
-	"kraftkit.sh/cpio"
+	"kraftkit.sh/fs/cpio"
 )
 
 var expectHeaders = map[string]cpio.Header{

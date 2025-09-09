@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"kraftkit.sh/fs/utils"
 )
 
 const (
@@ -387,7 +389,7 @@ func (w *writer) populateInodes() error {
 			}
 		}
 
-		var originalFInfo *fInfo
+		var originalFInfo *utils.FInfo
 		if w.opts.fInfoMap != nil {
 			// DirFS believes this is the root directory, so we set as such
 			toCheckForName := filepath.Join("/", path)
@@ -540,7 +542,7 @@ func (w *writer) findInodeAtPath(path string) (uint64, error) {
 	return uint64(nid), nil
 }
 
-func toInode(fi fs.FileInfo, nlink int, allRoot bool, originalFInfo *fInfo) any {
+func toInode(fi fs.FileInfo, nlink int, allRoot bool, originalFInfo *utils.FInfo) any {
 	var uid, gid int
 	mode := fi.Mode()
 
@@ -548,11 +550,11 @@ func toInode(fi fs.FileInfo, nlink int, allRoot bool, originalFInfo *fInfo) any 
 	case allRoot:
 		uid, gid = 0, 0
 	case originalFInfo != nil:
-		uid = originalFInfo.uid
-		gid = originalFInfo.gid
+		uid = originalFInfo.Uid
+		gid = originalFInfo.Gid
 
 		// Clear permission bits from 'mode' and set the ones from originalFInfo.mode
-		mode = mode&^fs.ModePerm | originalFInfo.mode.Perm()
+		mode = mode&^fs.ModePerm | originalFInfo.Mode.Perm()
 	default:
 		uid, gid = getOwner(fi)
 	}

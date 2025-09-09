@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"kraftkit.sh/cpio"
-	"kraftkit.sh/erofs"
+	"kraftkit.sh/fs/cpio"
+	"kraftkit.sh/fs/erofs"
 )
 
 type directory struct {

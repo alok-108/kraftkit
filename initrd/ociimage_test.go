@@ -13,7 +13,7 @@ import (
 	"os"
 	"testing"
 
-	"kraftkit.sh/cpio"
+	"kraftkit.sh/fs/cpio"
 	"kraftkit.sh/initrd"
 )
 

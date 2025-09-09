@@ -11,7 +11,7 @@ import (
 	"os"
 	"testing"
 
-	"kraftkit.sh/cpio"
+	"kraftkit.sh/fs/cpio"
 )
 
 func store(w *cpio.Writer, fn string) error {

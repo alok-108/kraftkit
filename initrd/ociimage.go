@@ -14,8 +14,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"kraftkit.sh/cpio"
-	"kraftkit.sh/erofs"
+	"kraftkit.sh/fs/cpio"
+	"kraftkit.sh/fs/erofs"
 	"kraftkit.sh/log"
 
 	"github.com/containers/image/v5/copy"

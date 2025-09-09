@@ -4,6 +4,10 @@
 // You may not use this file except in compliance with the License.
 package erofs
 
+import (
+	"kraftkit.sh/fs/utils"
+)
+
 type ErofsCreateOptions struct {
 	// allRoot indicates whether all files in the Erofs archive should be
 	// set to root:root (uid 0, gid 0) with default mode, regardless of the original
@@ -11,7 +15,7 @@ type ErofsCreateOptions struct {
 
 	// Map of file information for each file in the Erofs archive
 	// This is used to set the uid, gid, and mode for each file.
-	fInfoMap map[string]fInfo
+	fInfoMap map[string]utils.FInfo
 }
 
 type ErofsCreateOption func(*ErofsCreateOptions) error
@@ -27,7 +31,7 @@ func WithAllRoot(allRoot bool) ErofsCreateOption {
 
 // withFileInfoMap sets the file information map for the Erofs archive.
 // This should not be used externally.
-func withFileInfoMap(fInfoMap map[string]fInfo) ErofsCreateOption {
+func withFileInfoMap(fInfoMap map[string]utils.FInfo) ErofsCreateOption {
 	return func(eo *ErofsCreateOptions) error {
 		eo.fInfoMap = fInfoMap
 		return nil

@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
-	"kraftkit.sh/cpio"
+	"kraftkit.sh/fs/cpio"
 	"kraftkit.sh/initrd"
 	"kraftkit.sh/log"
 )

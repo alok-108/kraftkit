@@ -2,7 +2,7 @@
 // Copyright (c) 2025, Unikraft GmbH and The KraftKit Authors.
 // Licensed under the BSD-3-Clause License (the "License").
 // You may not use this file except in compliance with the License.
-package erofs
+package utils
 
 import (
 	"archive/tar"
@@ -19,21 +19,81 @@ import (
 	scfile "github.com/anchore/stereoscope/pkg/file"
 	"github.com/anchore/stereoscope/pkg/filetree"
 	"github.com/anchore/stereoscope/pkg/filetree/filenode"
-
 	"kraftkit.sh/log"
 )
 
-type fInfo struct {
-	uid  int
-	gid  int
-	mode fs.FileMode
+// IsTarFile checks if the given file is a tar archive.
+func IsTarFile(path string) bool {
+	fi, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer fi.Close()
+
+	tarReader := tar.NewReader(fi)
+	_, err = tarReader.Next()
+	if err != nil && err != io.EOF {
+		return false
+	}
+
+	return true
 }
 
-// unpackTarFileToDirectory extracts the contents of a tar file to a temporary
+// IsTarGzFile checks if the given file is a gzipped tar archive.
+func IsTarGzFile(path string) bool {
+	fi, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer fi.Close()
+
+	gzr, err := gzip.NewReader(fi)
+	if err != nil {
+		return false
+	}
+	defer gzr.Close()
+
+	tarReader := tar.NewReader(gzr)
+	_, err = tarReader.Next()
+	if err != nil && err != io.EOF {
+		return false
+	}
+
+	return true
+}
+
+// IsDirectory checks if the given path is a directory.
+func IsDirectory(path string) bool {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+
+	return fi.IsDir()
+}
+
+// IsOciArchive checks if the given path is an OCI archive.
+func IsOciArchive(path string) bool {
+	image, err := stereoscope.GetImage(context.TODO(), path)
+	if err != nil {
+		return false
+	}
+	defer image.Cleanup()
+
+	return image != nil && image.SquashedTree() != nil
+}
+
+type FInfo struct {
+	Uid  int
+	Gid  int
+	Mode fs.FileMode
+}
+
+// UnpackTarFileToDirectory extracts the contents of a tar file to a temporary
 // directory and returns the path to that directory. It handles directories,
 // regular files, symlinks, and hard links.
-func unpackTarFileToDirectory(ctx context.Context, source string) (string, map[string]fInfo, error) {
-	fInfoMap := make(map[string]fInfo)
+func UnpackTarFileToDirectory(ctx context.Context, source string) (string, map[string]FInfo, error) {
+	fInfoMap := make(map[string]FInfo)
 
 	log.G(ctx).Info("unpacking tar file")
 
@@ -116,18 +176,18 @@ func unpackTarFileToDirectory(ctx context.Context, source string) (string, map[s
 			header.Name = filepath.Join("/", header.Name)
 		}
 
-		fInfoMap[header.Name] = fInfo{
-			uid:  header.Uid,
-			gid:  header.Gid,
-			mode: fs.FileMode(header.Mode),
+		fInfoMap[header.Name] = FInfo{
+			Uid:  header.Uid,
+			Gid:  header.Gid,
+			Mode: fs.FileMode(header.Mode),
 		}
 	}
 
 	return targetDir, fInfoMap, nil
 }
 
-func unpackOCIImageToDirectory(ctx context.Context, source string) (string, map[string]fInfo, error) {
-	fInfoMap := make(map[string]fInfo)
+func UnpackOCIImageToDirectory(ctx context.Context, source string) (string, map[string]FInfo, error) {
+	fInfoMap := make(map[string]FInfo)
 
 	log.G(ctx).Info("unpacking oci image")
 
@@ -246,10 +306,10 @@ func unpackOCIImageToDirectory(ctx context.Context, source string) (string, map[
 			info.Path = filepath.Join("/", info.Path)
 		}
 
-		fInfoMap[info.Path] = fInfo{
-			uid:  info.UserID,
-			gid:  info.GroupID,
-			mode: info.Mode(),
+		fInfoMap[info.Path] = FInfo{
+			Uid:  info.UserID,
+			Gid:  info.GroupID,
+			Mode: info.Mode(),
 		}
 
 		return nil
@@ -263,20 +323,4 @@ func unpackOCIImageToDirectory(ctx context.Context, source string) (string, map[
 	}
 
 	return targetDir, fInfoMap, nil
-}
-
-// IsErofsFile checks if the given file is an EROFS filesystem.
-func IsErofsFile(initrd string) bool {
-	fi, err := os.Open(initrd)
-	if err != nil {
-		return false
-	}
-	defer fi.Close()
-
-	_, err = Open(fi)
-	if err != nil {
-		return false
-	}
-
-	return true
 }
