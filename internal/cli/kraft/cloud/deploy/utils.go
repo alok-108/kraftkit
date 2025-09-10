@@ -7,8 +7,17 @@ package deploy
 
 import (
 	"context"
+	"strconv"
+	"time"
 
 	"kraftkit.sh/unikraft/app"
+	kcinstances "sdk.kraft.cloud/instances"
+)
+
+const (
+	LabelScaleToZeroPolicy   = "cloud.unikraft.v1.instances/scale_to_zero.policy"
+	LabelScaleToZeroStateful = "cloud.unikraft.v1.instances/scale_to_zero.stateful"
+	LabelScaleToZeroCooldown = "cloud.unikraft.v1.instances/scale_to_zero.cooldown_time_ms"
 )
 
 // initProject sets up the project based on the provided context and
@@ -30,6 +39,32 @@ func (opts *DeployOptions) initProject(ctx context.Context) error {
 	opts.Project, err = app.NewProjectFromOptions(ctx, popts...)
 	if err != nil {
 		return err
+	}
+
+	for k, v := range opts.Project.Labels() {
+		switch k {
+		case LabelScaleToZeroPolicy:
+			if opts.ScaleToZero == nil {
+				policy := kcinstances.ScaleToZeroPolicy(v)
+				opts.ScaleToZero = &policy
+			}
+		case LabelScaleToZeroStateful:
+			if opts.ScaleToZeroStateful == nil {
+				stateful, err := strconv.ParseBool(v)
+				if err != nil {
+					return err
+				}
+				opts.ScaleToZeroStateful = &stateful
+			}
+		case LabelScaleToZeroCooldown:
+			if opts.ScaleToZeroCooldown == 0 {
+				cooldown, err := strconv.ParseInt(v, 10, 32)
+				if err != nil {
+					return err
+				}
+				opts.ScaleToZeroCooldown = time.Duration(cooldown) * time.Millisecond
+			}
+		}
 	}
 
 	return nil
