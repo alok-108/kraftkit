@@ -449,6 +449,7 @@ func newIndexAndManifestFromRemoteDigest(ctx context.Context, handle handler.Han
 		auths = config.G[config.KraftKit](ctx).Auth
 	}
 
+	var retIndex *Index
 	var retManifest *Manifest
 	authConfig := &authn.AuthConfig{}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
@@ -472,123 +473,214 @@ func newIndexAndManifestFromRemoteDigest(ctx context.Context, handle handler.Han
 		}),
 		remote.WithTransport(transport),
 	)
-	if err != nil {
-		return nil, nil, fmt.Errorf("could not get index from registry: %v", err)
-	}
+	if err == nil {
+		retIndex, err = NewIndex(ctx, handle)
+		if err != nil {
+			return nil, nil, err
+		}
 
-	index, err := NewIndex(ctx, handle)
-	if err != nil {
-		return nil, nil, err
-	}
+		ociIndexRaw, err := v1ImageIndex.RawManifest()
+		if err != nil {
+			return nil, nil, fmt.Errorf("could not access index manifest: %w", err)
+		}
+		indexDesc := content.NewDescriptorFromBytes(
+			ocispec.MediaTypeImageIndex,
+			ociIndexRaw,
+		)
 
-	ociIndexRaw, err := v1ImageIndex.RawManifest()
-	if err != nil {
-		return nil, nil, fmt.Errorf("could not access index manifest: %w", err)
-	}
-	indexDesc := content.NewDescriptorFromBytes(
-		ocispec.MediaTypeImageIndex,
-		ociIndexRaw,
-	)
+		var ociIndex ocispec.Index
+		if err := json.Unmarshal(ociIndexRaw, &ociIndex); err != nil {
+			return nil, nil, fmt.Errorf("could not unmarshal index: %w", err)
+		}
 
-	var ociIndex ocispec.Index
-	if err := json.Unmarshal(ociIndexRaw, &ociIndex); err != nil {
-		return nil, nil, fmt.Errorf("could not unmarshal index: %w", err)
-	}
+		retIndex.index = &ociIndex
+		retIndex.desc = &indexDesc
+		retIndex.annotations = ociIndex.Annotations
+		eg, egCtx := errgroup.WithContext(ctx)
 
-	index.desc = &indexDesc
-	eg, egCtx := errgroup.WithContext(ctx)
+		for i := range ociIndex.Manifests {
+			eg.Go(func(i int) func() error {
+				return func() error {
+					descriptor := ociIndex.Manifests[i]
 
-	for i := range ociIndex.Manifests {
-		eg.Go(func(i int) func() error {
-			return func() error {
-				descriptor := ociIndex.Manifests[i]
+					manifest, err := NewManifest(egCtx, handle)
+					if err != nil {
+						return fmt.Errorf("could not instantiate new manifest: %w", err)
+					}
 
-				manifest, err := NewManifest(egCtx, handle)
-				if err != nil {
-					return fmt.Errorf("could not instantiate new manifest: %w", err)
-				}
-
-				ref, err := name.ParseReference(
-					fmt.Sprintf("%s@%s", ref.Context().Name(), descriptor.Digest),
-				)
-				if err != nil {
-					return fmt.Errorf("could not parse reference: %w", err)
-				}
-
-				manifestSpec, imageSpec, err := handle.ResolveManifest(egCtx, "", descriptor.Digest)
-				if err == nil {
-					manifest.manifest = manifestSpec
-					manifest.config = imageSpec
-					manifest.config.Architecture = descriptor.Platform.Architecture
-					manifest.config.Platform = *descriptor.Platform
-				} else {
-					manifest.v1Image, err = cache.RemoteImage(
-						ref,
-						remote.WithPlatform(v1.Platform{
-							Architecture: descriptor.Platform.Architecture,
-							OS:           descriptor.Platform.OS,
-							OSFeatures:   descriptor.Platform.OSFeatures,
-						}),
-						remote.WithContext(egCtx),
-						remote.WithAuth(&simpleauth.SimpleAuthenticator{
-							Auth: authConfig,
-						}),
-						remote.WithTransport(transport),
+					ref, err := name.ParseReference(
+						fmt.Sprintf("%s@%s", ref.Context().Name(), descriptor.Digest),
 					)
 					if err != nil {
-						return fmt.Errorf("getting image: %w", err)
+						return fmt.Errorf("could not parse reference: %w", err)
 					}
 
-					b, err := manifest.v1Image.RawManifest()
-					if err != nil {
-						return fmt.Errorf("getting manifest: %w", err)
+					manifestSpec, imageSpec, err := handle.ResolveManifest(egCtx, "", descriptor.Digest)
+					if err == nil {
+						manifest.manifest = manifestSpec
+						manifest.config = imageSpec
+						manifest.config.Architecture = descriptor.Platform.Architecture
+						manifest.config.Platform = *descriptor.Platform
+					} else {
+						manifest.v1Image, err = cache.RemoteImage(
+							ref,
+							remote.WithPlatform(v1.Platform{
+								Architecture: descriptor.Platform.Architecture,
+								OS:           descriptor.Platform.OS,
+								OSFeatures:   descriptor.Platform.OSFeatures,
+							}),
+							remote.WithContext(egCtx),
+							remote.WithAuth(&simpleauth.SimpleAuthenticator{
+								Auth: authConfig,
+							}),
+							remote.WithTransport(transport),
+						)
+						if err != nil {
+							return fmt.Errorf("getting image: %w", err)
+						}
+
+						b, err := manifest.v1Image.RawManifest()
+						if err != nil {
+							return fmt.Errorf("getting manifest: %w", err)
+						}
+
+						if err := json.Unmarshal(b, &manifest.manifest); err != nil {
+							return fmt.Errorf("unmarshalling manifest: %w", err)
+						}
+
+						v1Manifest, err := v1.ParseManifest(bytes.NewReader(b))
+						if err != nil {
+							return fmt.Errorf("parsing manifest: %w", err)
+						}
+
+						for _, desc := range v1Manifest.Layers {
+							manifest.layers = append(manifest.layers, &Layer{
+								blob: &Blob{
+									desc: FromGoogleV1DescriptorToOCISpec(desc)[0],
+								},
+							})
+						}
+
+						b, err = manifest.v1Image.RawConfigFile()
+						if err != nil {
+							return fmt.Errorf("getting config: %w", err)
+						}
+
+						if err := json.Unmarshal(b, manifest.config); err != nil {
+							return fmt.Errorf("unmarshalling config: %w", err)
+						}
 					}
 
-					if err := json.Unmarshal(b, &manifest.manifest); err != nil {
-						return fmt.Errorf("unmarshalling manifest: %w", err)
+					manifest.desc = &descriptor
+					manifest.saved = false
+					retIndex.manifests = append(retIndex.manifests, manifest)
+
+					if manifest.desc.Digest.String() == dgst.String() {
+						retManifest = manifest
 					}
 
-					v1Manifest, err := v1.ParseManifest(bytes.NewReader(b))
-					if err != nil {
-						return fmt.Errorf("parsing manifest: %w", err)
-					}
-
-					for _, desc := range v1Manifest.Layers {
-						manifest.layers = append(manifest.layers, &Layer{
-							blob: &Blob{
-								desc: FromGoogleV1DescriptorToOCISpec(desc)[0],
-							},
-						})
-					}
-
-					b, err = manifest.v1Image.RawConfigFile()
-					if err != nil {
-						return fmt.Errorf("getting config: %w", err)
-					}
-
-					if err := json.Unmarshal(b, manifest.config); err != nil {
-						return fmt.Errorf("unmarshalling config: %w", err)
-					}
+					return nil
 				}
+			}(i))
+		}
 
-				manifest.desc = &descriptor
-				manifest.saved = false
-				index.manifests = append(index.manifests, manifest)
+		if err := eg.Wait(); err != nil {
+			return nil, nil, err
+		}
 
-				if manifest.desc.Digest.String() == dgst.String() {
-					retManifest = manifest
-				}
-
-				return nil
-			}
-		}(i))
+		return retIndex, retManifest, nil
 	}
 
-	if err := eg.Wait(); err != nil {
-		return nil, nil, err
+	retManifest, err = NewManifest(ctx, handle)
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not instantiate new manifest: %w", err)
 	}
 
-	return index, retManifest, nil
+	// If we've reached here, it means that the reference is not an index,
+	// maybe it is a standalone manifest.
+	retManifest.v1Image, err = cache.RemoteImage(ref,
+		remote.WithContext(ctx),
+		remote.WithAuth(&simpleauth.SimpleAuthenticator{
+			Auth: authConfig,
+		}),
+		remote.WithTransport(transport),
+	)
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not access image manifest: %w", err)
+	}
+
+	rawSpec, err := retManifest.v1Image.RawManifest()
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not access image manifest: %w", err)
+	}
+
+	if err := json.Unmarshal(rawSpec, &retManifest.manifest); err != nil {
+		return nil, nil, fmt.Errorf("could not unmarshal manifest: %w", err)
+	}
+
+	v1Manifest, err := v1.ParseManifest(bytes.NewReader(rawSpec))
+	if err != nil {
+		return nil, nil, fmt.Errorf("parsing manifest: %w", err)
+	}
+
+	for _, desc := range v1Manifest.Layers {
+		retManifest.layers = append(retManifest.layers, &Layer{
+			blob: &Blob{
+				desc: FromGoogleV1DescriptorToOCISpec(desc)[0],
+			},
+		})
+	}
+
+	v1ConfigRaw, err := retManifest.v1Image.RawConfigFile()
+	if err != nil {
+		return nil, nil, fmt.Errorf("getting config: %w", err)
+	}
+
+	if err := json.Unmarshal(v1ConfigRaw, retManifest.config); err != nil {
+		return nil, nil, fmt.Errorf("unmarshalling config: %w", err)
+	}
+
+	retManifestDesc := content.NewDescriptorFromBytes(
+		ocispec.MediaTypeImageManifest,
+		rawSpec,
+	)
+
+	retManifestDesc.Platform = &retManifest.config.Platform
+	retManifest.desc = &retManifestDesc
+	retManifest.saved = false
+
+	retIndex, _ = NewIndex(ctx, handle)
+	retIndex.manifests = []*Manifest{retManifest}
+	retIndex.annotations = retManifest.annotations
+	manifestDescs := []ocispec.Descriptor{
+		*retManifest.desc,
+	}
+
+	// Generate the final manifest
+	retIndex.index = &ocispec.Index{
+		MediaType: ocispec.MediaTypeImageIndex,
+		Versioned: specs.Versioned{
+			SchemaVersion: 2,
+		},
+		Manifests:   manifestDescs,
+		Annotations: retIndex.annotations,
+	}
+
+	indexJson, err := json.MarshalIndent(retIndex.index, "", "  ")
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to marshal manifest: %w", err)
+	}
+	indexJson = append(indexJson, '\n')
+
+	// Generate a new descriptor
+	indexDesc := content.NewDescriptorFromBytes(
+		ocispec.MediaTypeImageIndex,
+		indexJson,
+	)
+	indexDesc.Annotations = retIndex.annotations
+	retIndex.desc = &indexDesc
+
+	return retIndex, retManifest, nil
 }
 
 // NewPackageFromOCIManifestDigest is a constructor method which
