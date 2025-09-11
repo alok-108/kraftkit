@@ -5,8 +5,10 @@
 package oci
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -23,6 +25,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/opencontainers/go-digest"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	"oras.land/oras-go/v2/content"
 
 	"kraftkit.sh/config"
 	"kraftkit.sh/internal/set"
@@ -78,28 +81,51 @@ func NewOCIManager(ctx context.Context, opts ...OCIManagerOption) (*OCIManager, 
 
 // Update implements packmanager.PackageManager
 func (manager *OCIManager) Update(ctx context.Context) error {
-	packs, err := manager.update(ctx, nil, nil)
+	indexes, packs, err := manager.update(ctx, nil, nil)
 	if err != nil {
 		return err
 	}
 
-	for _, pack := range packs {
+	for ref, pack := range packs {
 		pack := pack.(*ociPackage) // Safe since we're in the oci package
 
 		log.G(ctx).Debugf("saving %s", pack.String())
 
-		if _, err := pack.index.Save(ctx, pack.imageRef(), nil); err != nil {
-			return fmt.Errorf("error saving %s: %w", pack.String(), err)
+		for _, manifest := range pack.index.manifests {
+			if _, err := manifest.Save(ctx, ref, nil); err != nil {
+				return fmt.Errorf("could not save manifest: %w", err)
+			}
+		}
+	}
+
+	ctx, handle, err := manager.handle(ctx)
+	if err != nil {
+		return err
+	}
+
+	for ref, index := range indexes {
+		indexJson, err := json.MarshalIndent(index, "", "  ")
+		if err != nil {
+			return fmt.Errorf("could not marshal index: %w", err)
+		}
+		indexJson = append(indexJson, '\n')
+
+		if err := handle.SaveDescriptor(ctx, ref,
+			content.NewDescriptorFromBytes(ocispec.MediaTypeImageIndex, indexJson),
+			bytes.NewReader(indexJson),
+			nil,
+		); err != nil {
+			return fmt.Errorf("could not save index: %w", err)
 		}
 	}
 
 	return nil
 }
 
-func (manager *OCIManager) update(ctx context.Context, auths map[string]config.AuthConfig, query *packmanager.Query) (map[string]pack.Package, error) {
+func (manager *OCIManager) update(ctx context.Context, auths map[string]config.AuthConfig, query *packmanager.Query) (map[string]ocispec.Index, map[string]pack.Package, error) {
 	ctx, handle, err := manager.handle(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if auths == nil {
@@ -107,6 +133,7 @@ func (manager *OCIManager) update(ctx context.Context, auths map[string]config.A
 	}
 
 	packs := make(map[string]pack.Package)
+	indexes := make(map[string]ocispec.Index)
 
 	for _, domain := range manager.registries {
 		log.G(ctx).
@@ -185,6 +212,26 @@ func (manager *OCIManager) update(ctx context.Context, auths map[string]config.A
 					return
 				}
 
+				v1IndexRaw, err := index.RawManifest()
+				if err != nil {
+					log.G(ctx).
+						WithField("ref", fullref).
+						Tracef("could not access the raw index: %s", err.Error())
+					return
+				}
+
+				var ociIndex ocispec.Index
+				if err := json.Unmarshal(v1IndexRaw, &ociIndex); err != nil {
+					log.G(ctx).
+						WithField("ref", fullref).
+						Tracef("could not unmarshal index: %s", err.Error())
+					return
+				}
+
+				mu.Lock()
+				indexes[fullref] = ociIndex
+				mu.Unlock()
+
 				v1IndexManifest, err := index.IndexManifest()
 				if err != nil {
 					log.G(ctx).
@@ -222,7 +269,7 @@ func (manager *OCIManager) update(ctx context.Context, auths map[string]config.A
 		wg.Wait()
 	}
 
-	return packs, nil
+	return indexes, packs, nil
 }
 
 // Pack implements packmanager.PackageManager
@@ -432,6 +479,8 @@ func (manager *OCIManager) Catalog(ctx context.Context, qopts ...packmanager.Que
 		auths = query.Auths()
 	}
 
+	descriptors := make(map[string][]ocispec.Descriptor)
+
 	// If a direct reference can be made, attempt to generate a package from it.
 	if query.Remote() && refErr == nil && !unsetRegistry {
 		authConfig := &authn.AuthConfig{}
@@ -470,7 +519,34 @@ func (manager *OCIManager) Catalog(ctx context.Context, qopts ...packmanager.Que
 		if err != nil {
 			log.G(ctx).
 				Debugf("could not get index: %v", err)
-			goto resolveLocalIndex
+
+			// Trying manifest instead of index
+			v1ImageManifest, err := cache.RemoteImage(ref, ropts...)
+			if err != nil {
+				log.G(ctx).
+					WithField("ref", ref).
+					Debugf("could not retrieve image manifest: %s", err.Error())
+				goto resolveLocalIndex
+			}
+
+			manifest, _ := v1ImageManifest.Manifest()
+			dgst, _ := v1ImageManifest.Digest()
+
+			descriptors[ref.String()] = append(descriptors[ref.String()], []ocispec.Descriptor{
+				{
+					MediaType: string(manifest.MediaType),
+					Digest:    digest.Digest(dgst.String()),
+					Platform: &ocispec.Platform{
+						Architecture: manifest.Config.Platform.Architecture,
+						OS:           manifest.Config.Platform.OS,
+						OSVersion:    manifest.Config.Platform.OSVersion,
+						OSFeatures:   manifest.Config.Platform.OSFeatures,
+					},
+					Annotations: manifest.Annotations,
+				},
+			}...)
+
+			goto searchLocalIndexes
 		}
 
 		v1IndexManifest, err := v1ImageIndex.IndexManifest()
@@ -481,19 +557,9 @@ func (manager *OCIManager) Catalog(ctx context.Context, qopts ...packmanager.Que
 			goto resolveLocalIndex
 		}
 
-		for checksum, pack := range processV1IndexManifests(ctx,
-			handle,
-			ref.String(),
-			query,
-			FromGoogleV1DescriptorToOCISpec(v1IndexManifest.Manifests...),
-		) {
-			log.G(ctx).
-				WithField("ref", pack.ID()).
-				WithField("via", "remote").
-				Trace("found")
-			packs[checksum] = pack
-			total++
-		}
+		descriptors[ref.String()] = append(descriptors[ref.String()],
+			FromGoogleV1DescriptorToOCISpec(v1IndexManifest.Manifests...)...,
+		)
 
 		// No need to search remote indexes by registry if the registry has been
 		// included as part of the ref.
@@ -501,7 +567,7 @@ func (manager *OCIManager) Catalog(ctx context.Context, qopts ...packmanager.Que
 	}
 
 	if query.Remote() {
-		more, err := manager.update(ctx, auths, query)
+		_, more, err := manager.update(ctx, auths, query)
 		if err != nil {
 			log.G(ctx).
 				Debugf("could not update: %v", err)
@@ -602,45 +668,20 @@ resolveLocalIndex:
 					goto searchLocalIndexes
 				}
 
-				for checksum, pack := range processV1IndexManifests(ctx,
-					handle,
-					oref,
-					query,
-					[]ocispec.Descriptor{
-						{
-							MediaType:   manifest.MediaType,
-							Digest:      dgst,
-							Platform:    manifest.Config.Platform,
-							Annotations: manifest.Annotations,
-						},
+				descriptors[ref.String()] = append(descriptors[oref], []ocispec.Descriptor{
+					{
+						MediaType:   manifest.MediaType,
+						Digest:      dgst,
+						Platform:    manifest.Config.Platform,
+						Annotations: manifest.Annotations,
 					},
-				) {
-					log.G(ctx).
-						WithField("ref", pack.ID()).
-						WithField("via", "local").
-						Trace("found")
-					packs[checksum] = pack
-					total++
-				}
-
+				}...)
 			} else {
 				goto searchLocalIndexes
 			}
 		}
 		if index != nil {
-			for checksum, pack := range processV1IndexManifests(ctx,
-				handle,
-				oref,
-				query,
-				index.Manifests,
-			) {
-				log.G(ctx).
-					WithField("ref", pack.ID()).
-					WithField("via", "local").
-					Trace("found")
-				packs[checksum] = pack
-				total++
-			}
+			descriptors[ref.String()] = append(descriptors[oref], index.Manifests...)
 		}
 
 		// If the register was set, then an exact local index lookup was expected so
@@ -726,23 +767,33 @@ searchLocalIndexes:
 				}
 			}
 
-			for checksum, pack := range processV1IndexManifests(ctx,
-				handle,
-				oref,
-				query,
-				index.Manifests,
-			) {
-				log.G(ctx).
-					WithField("ref", pack.ID()).
-					WithField("via", "local").
-					Trace("found")
-				packs[checksum] = pack
-				total++
-			}
+			descriptors[ref.String()] = append(descriptors[oref], index.Manifests...)
 		}
 	}
 
 returnPacks:
+	var wg sync.WaitGroup
+	wg.Add(len(descriptors))
+	for oref, descs := range descriptors {
+		go func(total *int, packs map[string]pack.Package) {
+			defer wg.Done()
+			for checksum, pack := range processV1IndexManifests(ctx,
+				handle,
+				oref,
+				query,
+				descs,
+			) {
+				log.G(ctx).
+					WithField("ref", pack.ID()).
+					Trace("found")
+				packs[checksum] = pack
+				*total++
+			}
+		}(&total, packs)
+	}
+
+	wg.Wait()
+
 	var ret []pack.Package
 
 	for _, pack := range packs {
