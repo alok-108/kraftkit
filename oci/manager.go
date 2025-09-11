@@ -432,6 +432,8 @@ func (manager *OCIManager) Catalog(ctx context.Context, qopts ...packmanager.Que
 		auths = query.Auths()
 	}
 
+	descriptors := make(map[string][]ocispec.Descriptor)
+
 	// If a direct reference can be made, attempt to generate a package from it.
 	if query.Remote() && refErr == nil && !unsetRegistry {
 		authConfig := &authn.AuthConfig{}
@@ -481,19 +483,9 @@ func (manager *OCIManager) Catalog(ctx context.Context, qopts ...packmanager.Que
 			goto resolveLocalIndex
 		}
 
-		for checksum, pack := range processV1IndexManifests(ctx,
-			handle,
-			ref.String(),
-			query,
-			FromGoogleV1DescriptorToOCISpec(v1IndexManifest.Manifests...),
-		) {
-			log.G(ctx).
-				WithField("ref", pack.ID()).
-				WithField("via", "remote").
-				Trace("found")
-			packs[checksum] = pack
-			total++
-		}
+		descriptors[ref.String()] = append(descriptors[ref.String()],
+			FromGoogleV1DescriptorToOCISpec(v1IndexManifest.Manifests...)...,
+		)
 
 		// No need to search remote indexes by registry if the registry has been
 		// included as part of the ref.
@@ -602,45 +594,20 @@ resolveLocalIndex:
 					goto searchLocalIndexes
 				}
 
-				for checksum, pack := range processV1IndexManifests(ctx,
-					handle,
-					oref,
-					query,
-					[]ocispec.Descriptor{
-						{
-							MediaType:   manifest.MediaType,
-							Digest:      dgst,
-							Platform:    manifest.Config.Platform,
-							Annotations: manifest.Annotations,
-						},
+				descriptors[ref.String()] = append(descriptors[oref], []ocispec.Descriptor{
+					{
+						MediaType:   manifest.MediaType,
+						Digest:      dgst,
+						Platform:    manifest.Config.Platform,
+						Annotations: manifest.Annotations,
 					},
-				) {
-					log.G(ctx).
-						WithField("ref", pack.ID()).
-						WithField("via", "local").
-						Trace("found")
-					packs[checksum] = pack
-					total++
-				}
-
+				}...)
 			} else {
 				goto searchLocalIndexes
 			}
 		}
 		if index != nil {
-			for checksum, pack := range processV1IndexManifests(ctx,
-				handle,
-				oref,
-				query,
-				index.Manifests,
-			) {
-				log.G(ctx).
-					WithField("ref", pack.ID()).
-					WithField("via", "local").
-					Trace("found")
-				packs[checksum] = pack
-				total++
-			}
+			descriptors[ref.String()] = append(descriptors[oref], index.Manifests...)
 		}
 
 		// If the register was set, then an exact local index lookup was expected so
@@ -726,23 +693,33 @@ searchLocalIndexes:
 				}
 			}
 
-			for checksum, pack := range processV1IndexManifests(ctx,
-				handle,
-				oref,
-				query,
-				index.Manifests,
-			) {
-				log.G(ctx).
-					WithField("ref", pack.ID()).
-					WithField("via", "local").
-					Trace("found")
-				packs[checksum] = pack
-				total++
-			}
+			descriptors[ref.String()] = append(descriptors[oref], index.Manifests...)
 		}
 	}
 
 returnPacks:
+	var wg sync.WaitGroup
+	wg.Add(len(descriptors))
+	for oref, descs := range descriptors {
+		go func(total *int, packs map[string]pack.Package) {
+			defer wg.Done()
+			for checksum, pack := range processV1IndexManifests(ctx,
+				handle,
+				oref,
+				query,
+				descs,
+			) {
+				log.G(ctx).
+					WithField("ref", pack.ID()).
+					Trace("found")
+				packs[checksum] = pack
+				*total++
+			}
+		}(&total, packs)
+	}
+
+	wg.Wait()
+
 	var ret []pack.Package
 
 	for _, pack := range packs {
