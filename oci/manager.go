@@ -78,7 +78,7 @@ func NewOCIManager(ctx context.Context, opts ...OCIManagerOption) (*OCIManager, 
 
 // Update implements packmanager.PackageManager
 func (manager *OCIManager) Update(ctx context.Context) error {
-	packs, err := manager.update(ctx, nil, nil)
+	_, packs, err := manager.update(ctx, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -96,10 +96,10 @@ func (manager *OCIManager) Update(ctx context.Context) error {
 	return nil
 }
 
-func (manager *OCIManager) update(ctx context.Context, auths map[string]config.AuthConfig, query *packmanager.Query) (map[string]pack.Package, error) {
+func (manager *OCIManager) update(ctx context.Context, auths map[string]config.AuthConfig, query *packmanager.Query) (map[string]ocispec.Index, map[string]pack.Package, error) {
 	ctx, handle, err := manager.handle(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if auths == nil {
@@ -107,6 +107,7 @@ func (manager *OCIManager) update(ctx context.Context, auths map[string]config.A
 	}
 
 	packs := make(map[string]pack.Package)
+	indexes := make(map[string]ocispec.Index)
 
 	for _, domain := range manager.registries {
 		log.G(ctx).
@@ -185,6 +186,26 @@ func (manager *OCIManager) update(ctx context.Context, auths map[string]config.A
 					return
 				}
 
+				v1IndexRaw, err := index.RawManifest()
+				if err != nil {
+					log.G(ctx).
+						WithField("ref", fullref).
+						Tracef("could not access the raw index: %s", err.Error())
+					return
+				}
+
+				var ociIndex ocispec.Index
+				if err := json.Unmarshal(v1IndexRaw, &ociIndex); err != nil {
+					log.G(ctx).
+						WithField("ref", fullref).
+						Tracef("could not unmarshal index: %s", err.Error())
+					return
+				}
+
+				mu.Lock()
+				indexes[fullref] = ociIndex
+				mu.Unlock()
+
 				v1IndexManifest, err := index.IndexManifest()
 				if err != nil {
 					log.G(ctx).
@@ -222,7 +243,7 @@ func (manager *OCIManager) update(ctx context.Context, auths map[string]config.A
 		wg.Wait()
 	}
 
-	return packs, nil
+	return indexes, packs, nil
 }
 
 // Pack implements packmanager.PackageManager
@@ -520,7 +541,7 @@ func (manager *OCIManager) Catalog(ctx context.Context, qopts ...packmanager.Que
 	}
 
 	if query.Remote() {
-		more, err := manager.update(ctx, auths, query)
+		_, more, err := manager.update(ctx, auths, query)
 		if err != nil {
 			log.G(ctx).
 				Debugf("could not update: %v", err)
