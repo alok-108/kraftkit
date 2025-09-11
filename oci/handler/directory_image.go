@@ -305,14 +305,14 @@ func (di *DirectoryIndex) Image(manifestDigest v1.Hash) (v1.Image, error) {
 		return nil, fmt.Errorf("resolving manifest: %w", err)
 	}
 
-	indexJson, err := json.Marshal(manifest)
+	manifestJson, err := json.Marshal(manifest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal manifest: %w", err)
 	}
 
 	desc := content.NewDescriptorFromBytes(
 		ocispec.MediaTypeImageIndex,
-		indexJson,
+		manifestJson,
 	)
 
 	return &DirectoryManifest{
