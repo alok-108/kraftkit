@@ -472,7 +472,34 @@ func (manager *OCIManager) Catalog(ctx context.Context, qopts ...packmanager.Que
 		if err != nil {
 			log.G(ctx).
 				Debugf("could not get index: %v", err)
-			goto resolveLocalIndex
+
+			// Trying manifest instead of index
+			v1ImageManifest, err := cache.RemoteImage(ref, ropts...)
+			if err != nil {
+				log.G(ctx).
+					WithField("ref", ref).
+					Debugf("could not retrieve image manifest: %s", err.Error())
+				goto resolveLocalIndex
+			}
+
+			manifest, _ := v1ImageManifest.Manifest()
+			dgst, _ := v1ImageManifest.Digest()
+
+			descriptors[ref.String()] = append(descriptors[ref.String()], []ocispec.Descriptor{
+				{
+					MediaType: string(manifest.MediaType),
+					Digest:    digest.Digest(dgst.String()),
+					Platform: &ocispec.Platform{
+						Architecture: manifest.Config.Platform.Architecture,
+						OS:           manifest.Config.Platform.OS,
+						OSVersion:    manifest.Config.Platform.OSVersion,
+						OSFeatures:   manifest.Config.Platform.OSFeatures,
+					},
+					Annotations: manifest.Annotations,
+				},
+			}...)
+
+			goto searchLocalIndexes
 		}
 
 		v1IndexManifest, err := v1ImageIndex.IndexManifest()
