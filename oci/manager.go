@@ -5,8 +5,10 @@
 package oci
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -23,6 +25,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/opencontainers/go-digest"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	"oras.land/oras-go/v2/content"
 
 	"kraftkit.sh/config"
 	"kraftkit.sh/internal/set"
@@ -78,18 +81,41 @@ func NewOCIManager(ctx context.Context, opts ...OCIManagerOption) (*OCIManager, 
 
 // Update implements packmanager.PackageManager
 func (manager *OCIManager) Update(ctx context.Context) error {
-	_, packs, err := manager.update(ctx, nil, nil)
+	indexes, packs, err := manager.update(ctx, nil, nil)
 	if err != nil {
 		return err
 	}
 
-	for _, pack := range packs {
+	for ref, pack := range packs {
 		pack := pack.(*ociPackage) // Safe since we're in the oci package
 
 		log.G(ctx).Debugf("saving %s", pack.String())
 
-		if _, err := pack.index.Save(ctx, pack.imageRef(), nil); err != nil {
-			return fmt.Errorf("error saving %s: %w", pack.String(), err)
+		for _, manifest := range pack.index.manifests {
+			if _, err := manifest.Save(ctx, ref, nil); err != nil {
+				return fmt.Errorf("could not save manifest: %w", err)
+			}
+		}
+	}
+
+	ctx, handle, err := manager.handle(ctx)
+	if err != nil {
+		return err
+	}
+
+	for ref, index := range indexes {
+		indexJson, err := json.MarshalIndent(index, "", "  ")
+		if err != nil {
+			return fmt.Errorf("could not marshal index: %w", err)
+		}
+		indexJson = append(indexJson, '\n')
+
+		if err := handle.SaveDescriptor(ctx, ref,
+			content.NewDescriptorFromBytes(ocispec.MediaTypeImageIndex, indexJson),
+			bytes.NewReader(indexJson),
+			nil,
+		); err != nil {
+			return fmt.Errorf("could not save index: %w", err)
 		}
 	}
 
