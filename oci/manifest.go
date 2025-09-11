@@ -30,6 +30,7 @@ import (
 	"kraftkit.sh/internal/version"
 	"kraftkit.sh/log"
 	"kraftkit.sh/oci/handler"
+	"kraftkit.sh/utils"
 )
 
 type Manifest struct {
@@ -431,6 +432,8 @@ func (manifest *Manifest) Save(ctx context.Context, fullref string, onProgress f
 		// Compare letters normally
 		return manifest.config.OSFeatures[j] > manifest.config.OSFeatures[i]
 	})
+
+	manifest.config.OSFeatures = utils.RemoveDuplicates(manifest.config.OSFeatures)
 
 	configJson, err := json.Marshal(manifest.config)
 	if err != nil {
