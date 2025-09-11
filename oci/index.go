@@ -55,10 +55,11 @@ func NewIndexFromSpec(ctx context.Context, handle handler.Handler, spec *ocispec
 
 	index.index = spec
 
-	indexJson, err := json.Marshal(spec)
+	indexJson, err := json.MarshalIndent(spec, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal manifest: %w", err)
 	}
+	indexJson = append(indexJson, '\n')
 
 	indexDesc := content.NewDescriptorFromBytes(
 		ocispec.MediaTypeImageIndex,
@@ -118,10 +119,11 @@ func (index *Index) Descriptor() (*ocispec.Descriptor, error) {
 		return index.desc, nil
 	}
 
-	indexJson, err := json.Marshal(index.index)
+	indexJson, err := json.MarshalIndent(index.index, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal manifest: %w", err)
 	}
+	indexJson = append(indexJson, '\n')
 
 	desc := content.NewDescriptorFromBytes(
 		ocispec.MediaTypeImageIndex,
@@ -210,10 +212,11 @@ func (index *Index) Save(ctx context.Context, fullref string, onProgress func(fl
 		index.desc = nil
 	}
 
-	indexJson, err := json.Marshal(index.index)
+	indexJson, err := json.MarshalIndent(index.index, "", "  ")
 	if err != nil {
 		return ocispec.Descriptor{}, fmt.Errorf("failed to marshal manifest: %w", err)
 	}
+	indexJson = append(indexJson, '\n')
 
 	// Generate a new descriptor
 	indexDesc := content.NewDescriptorFromBytes(

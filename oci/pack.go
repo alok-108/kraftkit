@@ -654,10 +654,11 @@ func NewPackageFromOCIManifestDigest(ctx context.Context, handle handler.Handler
 					Annotations: ocipack.index.annotations,
 				}
 
-				indexJson, err := json.Marshal(ocipack.index.index)
+				indexJson, err := json.MarshalIndent(ocipack.index.index, "", "  ")
 				if err != nil {
 					return nil, fmt.Errorf("failed to marshal manifest: %w", err)
 				}
+				indexJson = append(indexJson, '\n')
 
 				// Generate a new descriptor
 				indexDesc := content.NewDescriptorFromBytes(
@@ -1186,10 +1187,11 @@ func (ocipack *ociPackage) Export(ctx context.Context, path string) error {
 	}
 
 	indexPath := filepath.Join(tempDir, "index.json")
-	indexData, err := json.Marshal(ocipack.index.index)
+	indexData, err := json.MarshalIndent(ocipack.index.index, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal index: %w", err)
 	}
+	indexData = append(indexData, '\n')
 
 	indexFile, err := os.OpenFile(indexPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o664)
 	if err != nil {

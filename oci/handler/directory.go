@@ -314,10 +314,11 @@ func (handle *DirectoryHandler) PullDigest(ctx context.Context, mediaType, fullr
 
 		index.Manifests = newManifests
 
-		indexRaw, err = json.Marshal(&index)
+		indexRaw, err = json.MarshalIndent(&index, "", "  ")
 		if err != nil {
 			return fmt.Errorf("could not marshal raw index: %w", err)
 		}
+		indexRaw = append(indexRaw, '\n')
 
 		newIndexDigest := digest.FromBytes(indexRaw)
 		newIndexDigestPath := filepath.Join(
@@ -1114,10 +1115,11 @@ func (handle *DirectoryHandler) DeleteManifest(ctx context.Context, fullref stri
 	} else {
 		index.Manifests = manifests
 
-		indexJson, err := json.Marshal(index)
+		indexJson, err := json.MarshalIndent(index, "", "  ")
 		if err != nil {
 			return fmt.Errorf("could not marshal new index: %w", err)
 		}
+		indexJson = append(indexJson, '\n')
 
 		indexFile, err := os.OpenFile(indexPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o664)
 		if err != nil {
