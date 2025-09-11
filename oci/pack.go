@@ -40,6 +40,7 @@ import (
 	"kraftkit.sh/initrd"
 	"kraftkit.sh/internal/set"
 	"kraftkit.sh/internal/tableprinter"
+	"kraftkit.sh/internal/version"
 	"kraftkit.sh/kconfig"
 	"kraftkit.sh/log"
 	"kraftkit.sh/oci/cache"
@@ -985,28 +986,84 @@ func (ocipack *ociPackage) Pull(ctx context.Context, opts ...pack.PullOption) er
 		return err
 	}
 
-	// Pull the index but set the platform such that the relevant manifests can
-	// be retrieved as well.
-	if err := ocipack.handle.PullDigest(
-		ctx,
-		ocispec.MediaTypeImageIndex,
-		ocipack.imageRef(),
-		ocipack.manifest.desc.Digest,
-		ocipack.manifest.desc.Platform,
-		popts.OnProgress,
-	); err != nil {
+	ref, err := name.ParseReference(ocipack.imageRef())
+	if err != nil {
 		return err
 	}
 
-	// The digest for index has now changed following a pull.  Figure out the new
-	// manifest by using the platform checksum to identify the correct manifest.
-	index, _, err := ocipack.handle.ResolveIndex(ctx, ocipack.imageRef())
-	if err != nil {
-		return fmt.Errorf("could not resolve index after pull: %w", err)
+	// Check if this is a manifest or an index.
+	authConfig := &authn.AuthConfig{}
+	ropts := []remote.Option{
+		remote.WithContext(ctx),
+		remote.WithUserAgent(version.UserAgent()),
+		remote.WithPlatform(v1.Platform{
+			Architecture: ocipack.manifest.desc.Platform.Architecture,
+			OS:           ocipack.manifest.desc.Platform.OS,
+			OSFeatures:   ocipack.manifest.desc.Platform.OSFeatures,
+		}),
 	}
-	ocipack.index, err = NewIndexFromSpec(ctx, ocipack.handle, index)
-	if err != nil {
-		return fmt.Errorf("could not instantiate index from spec: %w", err)
+
+	// Annoyingly convert between regtypes and authn.
+	if auth, ok := popts.Auths()[ref.Context().RegistryStr()]; ok {
+		authConfig.Username = auth.User
+		authConfig.Password = auth.Token
+
+		ropts = append(ropts,
+			remote.WithAuth(&simpleauth.SimpleAuthenticator{
+				Auth: authConfig,
+			}),
+		)
+
+		if !auth.VerifySSL {
+			transport := remote.DefaultTransport.(*http.Transport).Clone()
+			transport.TLSClientConfig = &tls.Config{
+				InsecureSkipVerify: true,
+			}
+
+			ropts = append(ropts, remote.WithTransport(transport))
+		}
+	}
+
+	if _, err := cache.RemoteIndex(ref, ropts...); err == nil {
+		// Pull the index but set the platform such that the relevant manifests can
+		// be retrieved as well.
+		if err := ocipack.handle.PullDigest(
+			ctx,
+			ocispec.MediaTypeImageIndex,
+			ocipack.imageRef(),
+			ocipack.manifest.desc.Digest,
+			ocipack.manifest.desc.Platform,
+			popts.OnProgress,
+		); err != nil {
+			return err
+		}
+
+		// The digest for index has now changed following a pull.  Figure out the new
+		// manifest by using the platform checksum to identify the correct manifest.
+		index, _, err := ocipack.handle.ResolveIndex(ctx, ocipack.imageRef())
+		if err != nil {
+			return fmt.Errorf("could not resolve index after pull: %s", err.Error())
+		}
+
+		ocipack.index, err = NewIndexFromSpec(ctx, ocipack.handle, index)
+		if err != nil {
+			return fmt.Errorf("could not instantiate index from spec: %w", err)
+		}
+	} else if _, err := cache.RemoteImage(ref, ropts...); err == nil {
+		// Pull the manifest, the platform is well-known already but will be used as
+		// verification.
+		if err := ocipack.handle.PullDigest(
+			ctx,
+			ocispec.MediaTypeImageManifest,
+			ocipack.imageRef(),
+			ocipack.manifest.desc.Digest,
+			ocipack.manifest.desc.Platform,
+			popts.OnProgress,
+		); err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("could not access remote image (manifest) or index: %w", err)
 	}
 
 	// Calculate the platform checksum for the existing manifest, and compare
