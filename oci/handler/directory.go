@@ -362,7 +362,7 @@ func (handle *DirectoryHandler) PullDigest(ctx context.Context, mediaType, fullr
 		}
 
 	case ocispec.MediaTypeImageManifest:
-		v1Index, err := cache.RemoteIndex(ref, ropts...)
+		v1Image, err := cache.RemoteImage(ref, ropts...)
 		if err != nil {
 			return fmt.Errorf("could not retrieve remote manifest: %w", err)
 		}
@@ -377,14 +377,7 @@ func (handle *DirectoryHandler) PullDigest(ctx context.Context, mediaType, fullr
 				dgst.Encoded(),
 			)
 
-			hash, err := v1.NewHash(dgst.String())
-			if err != nil {
-				return fmt.Errorf("could not calculate image digest: %w", err)
-			}
-			image, err := v1Index.Image(hash)
-			if err != nil {
-				return fmt.Errorf("could not retrieve image: %w", err)
-			}
+			image := v1Image
 
 			log.G(ctx).
 				WithField("digest", dgst.String()).
