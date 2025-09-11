@@ -174,14 +174,14 @@ func (index *Index) Save(ctx context.Context, fullref string, onProgress func(fl
 	// pushes it to a content storage.
 	if index.annotations == nil {
 		index.annotations = make(map[string]string)
+
+		// General annotations
+		index.annotations[ocispec.AnnotationRefName] = ref.Context().String()
+		index.annotations[AnnotationKraftKitVersion] = version.Version()
+
+		// containerd compatibility annotations
+		index.annotations[images.AnnotationImageName] = ref.String()
 	}
-
-	// General annotations
-	index.annotations[ocispec.AnnotationRefName] = ref.Context().String()
-	index.annotations[AnnotationKraftKitVersion] = version.Version()
-
-	// containerd compatibility annotations
-	index.annotations[images.AnnotationImageName] = ref.String()
 
 	manifestDescs := make([]ocispec.Descriptor, len(index.manifests))
 	for i, manifest := range index.manifests {
