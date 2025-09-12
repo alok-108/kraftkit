@@ -570,11 +570,13 @@ func toInode(fi fs.FileInfo, nlink int, allRoot bool, originalFInfo *utils.FInfo
 	case originalFInfo != nil:
 		uid = originalFInfo.Uid
 		gid = originalFInfo.Gid
-
-		// Clear permission bits from 'mode' and set the ones from originalFInfo.mode
-		mode = mode&^fs.ModePerm | originalFInfo.Mode.Perm()
 	default:
 		uid, gid = getOwner(fi)
+	}
+
+	// Clear permission bits from 'mode' and set the ones from originalFInfo.mode
+	if originalFInfo != nil {
+		mode = mode&^fs.ModePerm | originalFInfo.Mode.Perm()
 	}
 
 	compact := fi.Size() <= math.MaxUint32 &&
