@@ -17,9 +17,5 @@ func IsErofsFile(initrd string) bool {
 	defer fi.Close()
 
 	_, err = Open(fi)
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
