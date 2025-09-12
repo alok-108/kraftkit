@@ -266,7 +266,7 @@ func (manifest *Manifest) SetKernel(ctx context.Context, path string) error {
 func (manifest *Manifest) SetKernelDbg(ctx context.Context, path string) error {
 	log.G(ctx).
 		WithField("src", path).
-		WithField("dest", WellKnownKernelPath).
+		WithField("dest", WellKnownKernelDbgPath).
 		Debug("including debug kernel")
 
 	layers := []*Layer{}
@@ -288,7 +288,7 @@ func (manifest *Manifest) SetKernelDbg(ctx context.Context, path string) error {
 	layer, err := NewLayerFromFile(ctx,
 		ocispec.MediaTypeImageLayer,
 		path,
-		WellKnownKernelPath,
+		WellKnownKernelDbgPath,
 		WithLayerAnnotation(AnnotationKernelDbgPath, WellKnownKernelDbgPath),
 	)
 	if err != nil {
