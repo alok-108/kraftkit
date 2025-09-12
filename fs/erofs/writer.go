@@ -18,6 +18,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -495,6 +496,23 @@ func (w *writer) dataForInode(path string, ino any) (io.ReadCloser, int64, error
 			names = append(names, de.Name())
 		}
 
+		// Sort the directory entries by name.
+		type pair struct {
+			d  Dirent
+			nm string
+		}
+		pairs := make([]pair, len(names))
+		for i := range names {
+			pairs[i] = pair{d: dirents[i], nm: names[i]}
+		}
+		sort.Slice(pairs, func(i, j int) bool {
+			return pairs[i].nm < pairs[j].nm
+		})
+		for i := range pairs {
+			dirents[i] = pairs[i].d
+			names[i] = pairs[i].nm
+		}
+
 		buf, err := encodeDirents(dirents, names)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to encode directory entries: %w", err)
@@ -559,10 +577,9 @@ func toInode(fi fs.FileInfo, nlink int, allRoot bool, originalFInfo *utils.FInfo
 		uid, gid = getOwner(fi)
 	}
 
-	// Can we use a compact inode?
 	compact := fi.Size() <= math.MaxUint32 &&
 		uid <= math.MaxUint16 && gid <= math.MaxUint16 &&
-		fi.ModTime() == time.Time{}
+		fi.ModTime().Equal(time.Time{})
 
 	if compact {
 		return InodeCompact{
