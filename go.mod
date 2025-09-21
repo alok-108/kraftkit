@@ -25,7 +25,7 @@ require (
 	github.com/containerd/log v0.1.0
 	github.com/containerd/nerdctl v1.7.7
 	github.com/containerd/platforms v1.0.0-rc.1
-	github.com/containers/image/v5 v5.36.1
+	github.com/containers/image/v5 v5.36.2
 	github.com/cpuguy83/go-md2man/v2 v2.0.7
 	github.com/cyphar/filepath-securejoin v0.4.1
 	github.com/dgraph-io/badger/v3 v3.2103.5
