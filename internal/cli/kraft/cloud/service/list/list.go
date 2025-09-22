@@ -37,8 +37,8 @@ func NewCmd() *cobra.Command {
 			# List all service in your account.
 			$ kraft cloud service list
 
-			# List all service in your account in full table format.
-			$ kraft cloud service list -o full
+			# List all service in your account in list format.
+			$ kraft cloud service list -o list
 		`),
 		Annotations: map[string]string{
 			cmdfactory.AnnotationHelpGroup: "kraftcloud-service",
