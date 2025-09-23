@@ -97,6 +97,8 @@ func PopulateMetroToken(cmd *cobra.Command, metro, token *string, allowInsecure 
 	*allowInsecure = cmd.Flag("allow-insecure").Value.String() == "true"
 	if *allowInsecure {
 		log.G(cmd.Context()).WithField("allow-insecure", *allowInsecure).Debug("using")
+	} else {
+		*allowInsecure = os.Getenv("UKC_ALLOW_INSECURE") == "true"
 	}
 
 	return nil
