@@ -72,6 +72,12 @@ func CreateFS(ctx context.Context, output string, source string, opts ...CpioCre
 		if err := c.CreateFSFromOCIImage(ctx, writer, source); err != nil {
 			return fmt.Errorf("could not create CPIO archive from OCI image: %w", err)
 		}
+	case IsCpioFile(source):
+		if err := c.CreateFSFromCpio(ctx, writer, source); err != nil {
+			return fmt.Errorf("could not create CPIO archive from CPIO file: %w", err)
+		}
+	case utils.IsErofsFile(source):
+		return fmt.Errorf("creating CPIO from EroFS files is not currently supported")
 	case utils.IsTarFile(source),
 		utils.IsTarGzFile(source):
 		if err := c.CreateFSFromTar(ctx, writer, source); err != nil {
@@ -80,10 +86,6 @@ func CreateFS(ctx context.Context, output string, source string, opts ...CpioCre
 	case utils.IsDirectory(source):
 		if err := c.CreateFSFromDirectory(ctx, writer, source); err != nil {
 			return fmt.Errorf("could not create CPIO archive from directory: %w", err)
-		}
-	case IsCpioFile(source):
-		if err := c.CreateFSFromCpio(ctx, writer, source); err != nil {
-			return fmt.Errorf("could not create CPIO archive from CPIO file: %w", err)
 		}
 	default:
 		return fmt.Errorf("unsupported source type: %s", source)

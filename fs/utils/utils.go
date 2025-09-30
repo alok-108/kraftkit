@@ -83,6 +83,49 @@ func IsOciArchive(path string) bool {
 	return image != nil && image.SquashedTree() != nil
 }
 
+// IsErofsFile checks if the given file is an EroFS archive.
+// Simplified check that only looks at the header of the file.
+// It is used only not in the fs/erofs package to signal errors.
+func IsErofsFile(path string) bool {
+	fi, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer fi.Close()
+
+	_, err = fi.Seek(0x400, io.SeekStart)
+	if err != nil {
+		return false
+	}
+
+	magic := make([]byte, 4)
+	_, err = fi.Read(magic)
+	if err != nil {
+		return false
+	}
+
+	return string(magic) == "\xE2\xE1\xF5\xE0" || string(magic) == "\xE3\xE1\xF5\xE0"
+}
+
+// IsCpioFile checks if the given file is a cpio archive.
+// Simplified check that only looks at the header of the file.
+// It is used only not in the fs/cpio package to signal errors.
+func IsCpioFile(path string) bool {
+	fi, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer fi.Close()
+
+	magic := make([]byte, 6)
+	_, err = fi.Read(magic)
+	if err != nil {
+		return false
+	}
+
+	return string(magic) == "070701" || string(magic) == "070702"
+}
+
 type FInfo struct {
 	Uid  int
 	Gid  int
