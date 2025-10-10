@@ -16,7 +16,6 @@ import (
 	"github.com/spf13/cobra"
 
 	kraftcloud "sdk.kraft.cloud"
-	kcinstances "sdk.kraft.cloud/instances"
 
 	"kraftkit.sh/cmdfactory"
 	"kraftkit.sh/config"
@@ -135,23 +134,6 @@ func Logs(ctx context.Context, opts *LogOptions, args ...string) error {
 	for _, instance := range args {
 		instance := instance
 
-		// Start by fetching the instance.
-		resp, err := opts.Client.Instances().WithMetro(opts.Metro).Get(ctx, instance)
-		if err != nil {
-			// Likely there was an issue performing the request; so we'll just
-			// skip and attempt to retrieve more logs.
-			if !errors.Is(err, io.EOF) {
-				log.G(ctx).Error(err)
-			}
-
-			continue
-		}
-
-		inst, err := resp.FirstOrErr()
-		if err != nil {
-			errGroup = append(errGroup, err)
-		}
-
 		prefix := ""
 		if !opts.NoPrefix {
 			prefix = instance + strings.Repeat(" ", longestName-len(instance))
@@ -169,31 +151,6 @@ func Logs(ctx context.Context, opts *LogOptions, args ...string) error {
 
 		observations.Add(instance)
 
-		// Continuously check the state in a separate thread every 1 second.
-		go func() {
-			for {
-				resp, err := opts.Client.Instances().WithMetro(opts.Metro).Get(ctx, instance)
-				if err != nil {
-					// Likely there was an issue performing the request; so we'll just
-					// skip and attempt to retrieve more logs.
-					if !errors.Is(err, io.EOF) {
-						log.G(ctx).Error(err)
-					}
-
-					continue
-				}
-
-				inst, err = resp.FirstOrErr()
-				if err != nil {
-					errGroup = append(errGroup, err)
-				}
-
-				if len(observations.Items()) == 0 {
-					return
-				}
-			}
-		}()
-
 		go func() {
 			defer observations.Done(instance)
 
@@ -204,7 +161,21 @@ func Logs(ctx context.Context, opts *LogOptions, args ...string) error {
 				case err := <-errChan:
 					if err != nil {
 						if errors.Is(err, io.EOF) {
-							if inst != nil && inst.State == kcinstances.InstanceStateStopped {
+							if opts.Tail < 1 {
+								resp, err := opts.Client.Instances().WithMetro(opts.Metro).Get(ctx, instance)
+								if err != nil {
+									if !errors.Is(err, io.EOF) {
+										log.G(ctx).Error(err)
+									}
+
+									continue
+								}
+
+								inst, err := resp.FirstOrErr()
+								if err != nil {
+									errGroup = append(errGroup, err)
+								}
+
 								consumer.Consume(
 									"",
 									fmt.Sprintf("The instance has exited (%s).", inst.DescribeStopReason()),
@@ -228,7 +199,21 @@ func Logs(ctx context.Context, opts *LogOptions, args ...string) error {
 					if ok {
 						consumer.Consume(line)
 					} else {
-						if inst != nil && inst.State == kcinstances.InstanceStateStopped {
+						if opts.Tail < 1 {
+							resp, err := opts.Client.Instances().WithMetro(opts.Metro).Get(ctx, instance)
+							if err != nil {
+								if !errors.Is(err, io.EOF) {
+									log.G(ctx).Error(err)
+								}
+
+								continue
+							}
+
+							inst, err := resp.FirstOrErr()
+							if err != nil {
+								errGroup = append(errGroup, err)
+							}
+
 							consumer.Consume(
 								"",
 								fmt.Sprintf("The instance has exited (%s).", inst.DescribeStopReason()),
