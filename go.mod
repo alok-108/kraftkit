@@ -84,7 +84,7 @@ require (
 	k8s.io/apimachinery v0.34.1
 	k8s.io/apiserver v0.32.3
 	oras.land/oras-go/v2 v2.6.0
-	sdk.kraft.cloud v0.5.10-0.20250713134913-4334f63778ff
+	sdk.kraft.cloud v0.5.10-0.20251010085803-9d579e3ec270
 	sigs.k8s.io/kustomize/kyaml v0.20.1
 	xenbits.xenproject.org/git-http/xen.git/tools/golang/xenlight v0.0.0-20240729172045-026c9fa29716
 )
