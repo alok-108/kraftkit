@@ -43,6 +43,10 @@ inputs:
   manifests:
     description: List of Unikraft source manifests
     required: false
+  buildkit:
+    description: Setup BuildKit before running the action
+    required: false
+    default: "true"
 
   #
   # Project flags
@@ -137,6 +141,7 @@ runs:
     id: suffix
     run: echo "suffix=$(date +%s)" >> "$GITHUB_OUTPUT"
   - name: Set up BuildKit
+    if: ${{ inputs.buildkit == 'true' }}
     shell: bash
     run: |
       docker run \
