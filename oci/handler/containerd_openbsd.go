@@ -27,6 +27,11 @@ func (handle *ContainerdHandler) PullDigest(ctx context.Context, mediaType, full
 	return fmt.Errorf("not implemented: oci.handler.ContainerdHandler.PullDigest")
 }
 
+// ReadDigest implements DigestReader.
+func (handle *ContainerdHandler) ReadDigest(ctx context.Context, dgst digest.Digest) (io.ReadCloser, error) {
+	return nil, fmt.Errorf("not implemented: oci.handler.ContainerdHandler.ReadDigest")
+}
+
 // ListDigest implements DigestResolver.
 func (handle *ContainerdHandler) ListDigests(ctx context.Context) ([]digest.Digest, error) {
 	return nil, fmt.Errorf("not implemented: oci.handler.ContainerdHandler.ListDigests")
@@ -52,8 +57,8 @@ func (handle *ContainerdHandler) DeleteIndex(ctx context.Context, fullref string
 }
 
 // ResolveIndex implements IndexResolver.
-func (handle *ContainerdHandler) ResolveIndex(ctx context.Context, fullref string) (*ocispec.Index, error) {
-	return nil, fmt.Errorf("not implemented: oci.handler.ContainerdHandler.ResolveIndex")
+func (handle *ContainerdHandler) ResolveIndex(ctx context.Context, fullref string) (*ocispec.Index, digest.Digest, error) {
+	return nil, "", fmt.Errorf("not implemented: oci.handler.ContainerdHandler.ResolveIndex")
 }
 
 // SaveDescriptor implements DescriptorSaver.
