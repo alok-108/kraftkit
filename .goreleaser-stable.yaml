@@ -66,10 +66,10 @@ signs:
       - "--key=cosign.key"
       - "--output-signature=${signature}"
       - "${artifact}"
+      - "--use-signing-config=false"
+      - "--bundle=${signature}.bundle"
       - "--yes"
     artifacts: all
-    env:
-     - COSIGN_EXPERIMENTAL=1
 
 nfpms:
   - vendor: Unikraft
