@@ -61,7 +61,21 @@ func (initrd *file) Name() string {
 
 // Build implements Initrd.
 func (initrd *file) Build(_ context.Context) (string, error) {
-	return initrd.path, nil
+	if initrd.opts.output == initrd.path {
+		return "", fmt.Errorf("CPIO archive path is the same as the source path, this is not allowed as it creates corrupted archives")
+	}
+
+	input, err := os.ReadFile(initrd.path)
+	if err != nil {
+		return "", fmt.Errorf("reading input file: %w", err)
+	}
+
+	err = os.WriteFile(initrd.opts.output, input, 0o644)
+	if err != nil {
+		return "", fmt.Errorf("writing output file: %w", err)
+	}
+
+	return initrd.opts.output, nil
 }
 
 // Options implements Initrd.
