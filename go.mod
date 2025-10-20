@@ -10,7 +10,7 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/acorn-io/baaah v0.0.0-20230522221318-afcc93619e30
-	github.com/anchore/stereoscope v0.1.10
+	github.com/anchore/stereoscope v0.1.11
 	github.com/briandowns/spinner v1.23.2
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.10
@@ -30,7 +30,7 @@ require (
 	github.com/cyphar/filepath-securejoin v0.5.0
 	github.com/dgraph-io/badger/v3 v3.2103.5
 	github.com/docker/cli v28.5.1+incompatible
-	github.com/docker/docker v28.5.0+incompatible
+	github.com/docker/docker v28.5.1+incompatible
 	github.com/dustin/go-humanize v1.0.1
 	github.com/erikgeiser/promptkit v0.9.0
 	github.com/erikh/ping v0.0.0-20141209185752-d731d249e12a
@@ -297,11 +297,11 @@ require (
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.42.0 // indirect
-	golang.org/x/net v0.43.0 // indirect
-	golang.org/x/text v0.29.0 // indirect
+	golang.org/x/crypto v0.43.0 // indirect
+	golang.org/x/net v0.45.0 // indirect
+	golang.org/x/text v0.30.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
-	golang.org/x/tools v0.36.0 // indirect
+	golang.org/x/tools v0.37.0 // indirect
 	google.golang.org/genproto v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250804133106-a7a43d27e69b // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250818200422-3122310a409c // indirect
