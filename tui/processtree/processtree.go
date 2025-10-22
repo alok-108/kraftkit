@@ -74,6 +74,7 @@ type ProcessTree struct {
 	width     int
 	rightPad  int
 	parallel  bool
+	spinner   spinner.Model
 	norender  bool
 	finished  int
 	total     int
@@ -100,6 +101,7 @@ func NewProcessTree(ctx context.Context, opts []ProcessTreeOption, tree ...*Proc
 		finished:  0,
 		oldOut:    iostreams.G(ctx).Out,
 		hideError: false,
+		spinner:   spinner.New(),
 	}
 
 	for _, opt := range opts {
@@ -233,10 +235,9 @@ func (pt *ProcessTree) Start() error {
 }
 
 func (pt *ProcessTree) Init() tea.Cmd {
-	//nolint:staticcheck
 	cmds := []tea.Cmd{
 		waitForProcessExit(pt.channel),
-		spinner.Tick,
+		pt.spinner.Tick,
 		pt.timer.Init(),
 	}
 
@@ -246,8 +247,9 @@ func (pt *ProcessTree) Init() tea.Cmd {
 		pti := pti
 		pti.timeout = pt.timeout
 
-		cmds = append(cmds, pt.waitForProcessCmd(pti))
+		cmds = append(cmds, pti.spinner.Tick)
 		cmds = append(cmds, pti.timer.Init())
+		cmds = append(cmds, pt.waitForProcessCmd(pti))
 	}
 
 	return tea.Batch(cmds...)
@@ -275,10 +277,10 @@ func (pt ProcessTree) getNextReadyChildren(tree []*ProcessTreeItem) []*ProcessTr
 
 			// Determine the status of immediate children
 			for _, child := range item.children {
-				if child.status == StatusFailed ||
-					child.status == StatusFailedChild {
+				switch child.status {
+				case StatusFailed, StatusFailedChild:
 					failed++
-				} else if child.status == StatusSuccess {
+				case StatusSuccess:
 					completed++
 				}
 			}
