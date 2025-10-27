@@ -7,7 +7,7 @@ require (
 	github.com/golang/glog v1.2.5
 	github.com/iancoleman/strcase v0.3.0
 	kraftkit.sh v0.12.3
-	mvdan.cc/gofumpt v0.9.0
+	mvdan.cc/gofumpt v0.9.2
 )
 
 require (
@@ -37,5 +37,5 @@ require (
 	golang.org/x/crypto v0.42.0 // indirect
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/term v0.36.0 // indirect
-	golang.org/x/tools v0.36.0 // indirect
+	golang.org/x/tools v0.38.0 // indirect
 )
