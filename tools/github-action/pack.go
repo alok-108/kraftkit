@@ -97,7 +97,7 @@ func (opts *GithubAction) buildRootfs(ctx context.Context, workdir, rootfs strin
 		initrd.WithOutput(filepath.Join(
 			workdir,
 			unikraft.BuildDir,
-			fmt.Sprintf(initrd.DefaultInitramfsArchFileName, arch),
+			fmt.Sprintf(initrd.DefaultInitramfsArchFileName, arch, initrd.FsTypeCpio.String()),
 		)),
 		initrd.WithCacheDir(filepath.Join(
 			workdir,

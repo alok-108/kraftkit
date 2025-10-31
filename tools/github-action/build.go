@@ -31,7 +31,7 @@ func (opts *GithubAction) build(ctx context.Context) error {
 			initrd.WithOutput(filepath.Join(
 				opts.Workdir,
 				unikraft.BuildDir,
-				fmt.Sprintf(initrd.DefaultInitramfsArchFileName, opts.target.Architecture().String()),
+				fmt.Sprintf(initrd.DefaultInitramfsArchFileName, opts.target.Architecture().String(), opts.RootfsType.String()),
 			)),
 			initrd.WithCacheDir(filepath.Join(
 				opts.Workdir,

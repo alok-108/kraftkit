@@ -361,7 +361,7 @@ func (opts *RunOptions) prepareRootfs(ctx context.Context, machine *machineapi.M
 	machine.Status.InitrdPath = filepath.Join(
 		opts.workdir,
 		unikraft.BuildDir,
-		fmt.Sprintf(initrd.DefaultInitramfsArchFileName, machine.Spec.Architecture),
+		fmt.Sprintf(initrd.DefaultInitramfsArchFileName, machine.Spec.Architecture, opts.RootfsType.String()),
 	)
 
 	ramfs, err := initrd.New(ctx,

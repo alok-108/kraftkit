@@ -34,7 +34,7 @@ func BuildRootfs(ctx context.Context, workdir, rootfs string, compress, keepOwne
 		initrd.WithOutput(filepath.Join(
 			workdir,
 			unikraft.BuildDir,
-			fmt.Sprintf(initrd.DefaultInitramfsArchFileName, arch),
+			fmt.Sprintf(initrd.DefaultInitramfsArchFileName, arch, fsType.String()),
 		)),
 		initrd.WithCacheDir(filepath.Join(
 			workdir,
