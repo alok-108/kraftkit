@@ -10,7 +10,7 @@ import (
 	"io"
 	"os"
 
-	utils "kraftkit.sh/fs/utils"
+	"kraftkit.sh/fsutils"
 	"kraftkit.sh/log"
 )
 
@@ -27,7 +27,7 @@ func CreateFS(ctx context.Context, output string, source string, opts ...ErofsCr
 	defer writer.Close()
 
 	switch {
-	case utils.IsOciArchive(source):
+	case fsutils.IsOciArchive(source):
 		if err := c.CreateFSFromOCIImage(ctx, writer, source, opts...); err != nil {
 			return fmt.Errorf("could not create EroFS archive from OCI image: %w", err)
 		}
@@ -35,14 +35,14 @@ func CreateFS(ctx context.Context, output string, source string, opts ...ErofsCr
 		if err := c.CreateFSFromErofs(ctx, writer, source, opts...); err != nil {
 			return fmt.Errorf("could not create EroFS archive from CPIO file: %w", err)
 		}
-	case utils.IsCpioFile(source):
+	case fsutils.IsCpioFile(source):
 		return fmt.Errorf("creating EroFS from CPIO files is not currently supported")
-	case utils.IsTarFile(source),
-		utils.IsTarGzFile(source):
+	case fsutils.IsTarFile(source),
+		fsutils.IsTarGzFile(source):
 		if err := c.CreateFSFromTarFile(ctx, writer, source, opts...); err != nil {
 			return fmt.Errorf("could not create EroFS archive from tar file: %w", err)
 		}
-	case utils.IsDirectory(source):
+	case fsutils.IsDirectory(source):
 		if err := c.CreateFSFromDirectory(ctx, writer, source, opts...); err != nil {
 			return fmt.Errorf("could not create EroFS archive from directory: %w", err)
 		}
@@ -55,7 +55,7 @@ func CreateFS(ctx context.Context, output string, source string, opts ...ErofsCr
 
 // CreateFSFromOCIImage creates an EroFS filesystem from an OCI image.
 func (c *createOptions) CreateFSFromOCIImage(ctx context.Context, writer *os.File, source string, opts ...ErofsCreateOption) error {
-	source, fInfoMap, err := utils.UnpackOCIImageToDirectory(ctx, source)
+	source, fInfoMap, err := fsutils.UnpackOCIImageToDirectory(ctx, source)
 	if err != nil {
 		return fmt.Errorf("could not unpack OCI file: %w", err)
 	}
@@ -78,7 +78,7 @@ func (c *createOptions) CreateFSFromDirectory(ctx context.Context, writer *os.Fi
 
 // CreateFSFromTarFile creates an EroFS filesystem from a tar file.
 func (c *createOptions) CreateFSFromTarFile(ctx context.Context, writer *os.File, source string, opts ...ErofsCreateOption) error {
-	source, fInfoMap, err := utils.UnpackTarFileToDirectory(ctx, source)
+	source, fInfoMap, err := fsutils.UnpackTarFileToDirectory(ctx, source)
 	if err != nil {
 		return fmt.Errorf("could not unpack tar file: %w", err)
 	}

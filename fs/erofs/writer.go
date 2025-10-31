@@ -23,7 +23,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"kraftkit.sh/fs/utils"
+	"kraftkit.sh/fsutils"
 )
 
 const (
@@ -390,7 +390,7 @@ func (w *writer) populateInodes() error {
 			}
 		}
 
-		var originalFInfo *utils.FInfo
+		var originalFInfo *fsutils.FInfo
 		if w.opts.fInfoMap != nil {
 			// DirFS believes this is the root directory, so we set as such
 			toCheckForName := filepath.Join("/", path)
@@ -560,7 +560,7 @@ func (w *writer) findInodeAtPath(path string) (uint64, error) {
 	return uint64(nid), nil
 }
 
-func toInode(fi fs.FileInfo, nlink int, allRoot bool, originalFInfo *utils.FInfo) any {
+func toInode(fi fs.FileInfo, nlink int, allRoot bool, originalFInfo *fsutils.FInfo) any {
 	var uid, gid int
 	mode := fi.Mode()
 

@@ -113,6 +113,7 @@ type FsType string
 const (
 	FsTypeCpio    = FsType("cpio")
 	FsTypeErofs   = FsType("erofs")
+	FsTypeFile    = FsType("file")
 	FsTypeUnknown = FsType("unknown")
 )
 

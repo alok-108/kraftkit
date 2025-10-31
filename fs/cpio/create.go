@@ -21,7 +21,7 @@ import (
 	"github.com/anchore/stereoscope/pkg/filetree"
 	"github.com/anchore/stereoscope/pkg/filetree/filenode"
 
-	utils "kraftkit.sh/fs/utils"
+	"kraftkit.sh/fsutils"
 	"kraftkit.sh/log"
 )
 
@@ -68,7 +68,7 @@ func CreateFS(ctx context.Context, output string, source string, opts ...CpioCre
 	}()
 
 	switch {
-	case utils.IsOciArchive(source):
+	case fsutils.IsOciArchive(source):
 		if err := c.CreateFSFromOCIImage(ctx, writer, source); err != nil {
 			return fmt.Errorf("could not create CPIO archive from OCI image: %w", err)
 		}
@@ -76,14 +76,14 @@ func CreateFS(ctx context.Context, output string, source string, opts ...CpioCre
 		if err := c.CreateFSFromCpio(ctx, writer, source); err != nil {
 			return fmt.Errorf("could not create CPIO archive from CPIO file: %w", err)
 		}
-	case utils.IsErofsFile(source):
+	case fsutils.IsErofsFile(source):
 		return fmt.Errorf("creating CPIO from EroFS files is not currently supported")
-	case utils.IsTarFile(source),
-		utils.IsTarGzFile(source):
+	case fsutils.IsTarFile(source),
+		fsutils.IsTarGzFile(source):
 		if err := c.CreateFSFromTar(ctx, writer, source); err != nil {
 			return fmt.Errorf("could not create CPIO archive from tar file: %w", err)
 		}
-	case utils.IsDirectory(source):
+	case fsutils.IsDirectory(source):
 		if err := c.CreateFSFromDirectory(ctx, writer, source); err != nil {
 			return fmt.Errorf("could not create CPIO archive from directory: %w", err)
 		}
