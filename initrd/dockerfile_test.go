@@ -23,7 +23,7 @@ func TestNewFromDockerfileToCPIO(t *testing.T) {
 		ctx,
 		rootfsDockerfile,
 		initrd.WithArchitecture("x86_64"),
-		initrd.WithType(initrd.FsTypeCpio),
+		initrd.WithOutputType(initrd.FsTypeCpio),
 	)
 	if err != nil {
 		t.Fatal("NewFromDockerfile:", err)

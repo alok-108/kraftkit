@@ -248,7 +248,7 @@ func buildCPIO(ctx context.Context, workdir, source string) (path string, size i
 
 	cpio, err := initrd.New(ctx, source,
 		initrd.WithWorkdir(workdir),
-		initrd.WithType(initrd.FsTypeCpio),
+		initrd.WithOutputType(initrd.FsTypeCpio),
 	)
 	if err != nil {
 		return "", -1, fmt.Errorf("initializing temp CPIO archive: %w", err)

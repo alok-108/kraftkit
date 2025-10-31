@@ -26,7 +26,7 @@ func TestNewFromOCIImageToCPIO(t *testing.T) {
 		ctx,
 		rootfsDockerfile,
 		initrd.WithArchitecture("x86_64"),
-		initrd.WithType(initrd.FsTypeCpio),
+		initrd.WithOutputType(initrd.FsTypeCpio),
 	)
 	if err != nil {
 		t.Fatal("NewFromOCIImage:", err)

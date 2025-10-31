@@ -39,7 +39,7 @@ func (opts *GithubAction) build(ctx context.Context) error {
 				"rootfs-cache",
 			)),
 			initrd.WithArchitecture(opts.target.Architecture().String()),
-			initrd.WithType(opts.RootfsType),
+			initrd.WithOutputType(opts.RootfsType),
 		)
 		if err != nil {
 			return fmt.Errorf("could not prepare initramfs: %w", err)

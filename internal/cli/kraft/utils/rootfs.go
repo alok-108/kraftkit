@@ -44,7 +44,7 @@ func BuildRootfs(ctx context.Context, workdir, rootfs string, compress, keepOwne
 		initrd.WithArchitecture(arch),
 		initrd.WithCompression(compress),
 		initrd.WithKeepOwners(keepOwners),
-		initrd.WithType(fsType),
+		initrd.WithOutputType(fsType),
 	)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("could not initialize initramfs builder: %w", err)

@@ -90,8 +90,8 @@ func WithOutput(output string) InitrdOption {
 	}
 }
 
-// WithType sets the filesystem type of the resulting archive file.
-func WithType(fsType FsType) InitrdOption {
+// WithOutputType sets the output type of the resulting root filesystem.
+func WithOutputType(fsType FsType) InitrdOption {
 	return func(opts *InitrdOptions) error {
 		opts.fsType = fsType
 		return nil

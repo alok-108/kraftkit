@@ -24,7 +24,7 @@ func TestNewFromTarballToCPIO(t *testing.T) {
 		ctx,
 		rootfsTarball,
 		initrd.WithArchitecture("x86_64"),
-		initrd.WithType(initrd.FsTypeCpio),
+		initrd.WithOutputType(initrd.FsTypeCpio),
 	)
 	if err != nil {
 		t.Fatal("NewFromTarball:", err)
