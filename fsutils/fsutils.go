@@ -133,11 +133,13 @@ type FileInfo struct {
 	Name string
 }
 
+type FileInfoMap map[string]FileInfo
+
 // UnpackTarFileToDirectory extracts the contents of a tar file to a temporary
 // directory and returns the path to that directory. It handles directories,
 // regular files, symlinks, and hard links.
-func UnpackTarFileToDirectory(ctx context.Context, source string) (string, map[string]FileInfo, error) {
-	fInfoMap := make(map[string]FileInfo)
+func UnpackTarFileToDirectory(ctx context.Context, source string) (string, FileInfoMap, error) {
+	fInfoMap := make(FileInfoMap)
 
 	log.G(ctx).Info("unpacking tar file")
 
@@ -231,8 +233,8 @@ func UnpackTarFileToDirectory(ctx context.Context, source string) (string, map[s
 	return targetDir, fInfoMap, nil
 }
 
-func UnpackOCIImageToDirectory(ctx context.Context, source string) (string, map[string]FileInfo, error) {
-	fInfoMap := make(map[string]FileInfo)
+func UnpackOCIImageToDirectory(ctx context.Context, source string) (string, FileInfoMap, error) {
+	fInfoMap := make(FileInfoMap)
 
 	log.G(ctx).Info("unpacking oci image")
 
