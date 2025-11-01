@@ -130,6 +130,7 @@ type FInfo struct {
 	Uid  int
 	Gid  int
 	Mode fs.FileMode
+	Name string
 }
 
 // UnpackTarFileToDirectory extracts the contents of a tar file to a temporary
@@ -220,6 +221,7 @@ func UnpackTarFileToDirectory(ctx context.Context, source string) (string, map[s
 		}
 
 		fInfoMap[header.Name] = FInfo{
+			Name: header.Name,
 			Uid:  header.Uid,
 			Gid:  header.Gid,
 			Mode: fs.FileMode(header.Mode),
@@ -350,6 +352,7 @@ func UnpackOCIImageToDirectory(ctx context.Context, source string) (string, map[
 		}
 
 		fInfoMap[info.Path] = FInfo{
+			Name: info.Path,
 			Uid:  info.UserID,
 			Gid:  info.GroupID,
 			Mode: info.Mode(),
