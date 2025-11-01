@@ -126,7 +126,7 @@ func IsCpioFile(path string) bool {
 	return string(magic) == "070701" || string(magic) == "070702"
 }
 
-type FInfo struct {
+type FileInfo struct {
 	Uid  int
 	Gid  int
 	Mode fs.FileMode
@@ -136,8 +136,8 @@ type FInfo struct {
 // UnpackTarFileToDirectory extracts the contents of a tar file to a temporary
 // directory and returns the path to that directory. It handles directories,
 // regular files, symlinks, and hard links.
-func UnpackTarFileToDirectory(ctx context.Context, source string) (string, map[string]FInfo, error) {
-	fInfoMap := make(map[string]FInfo)
+func UnpackTarFileToDirectory(ctx context.Context, source string) (string, map[string]FileInfo, error) {
+	fInfoMap := make(map[string]FileInfo)
 
 	log.G(ctx).Info("unpacking tar file")
 
@@ -220,7 +220,7 @@ func UnpackTarFileToDirectory(ctx context.Context, source string) (string, map[s
 			header.Name = filepath.Join("/", header.Name)
 		}
 
-		fInfoMap[header.Name] = FInfo{
+		fInfoMap[header.Name] = FileInfo{
 			Name: header.Name,
 			Uid:  header.Uid,
 			Gid:  header.Gid,
@@ -231,8 +231,8 @@ func UnpackTarFileToDirectory(ctx context.Context, source string) (string, map[s
 	return targetDir, fInfoMap, nil
 }
 
-func UnpackOCIImageToDirectory(ctx context.Context, source string) (string, map[string]FInfo, error) {
-	fInfoMap := make(map[string]FInfo)
+func UnpackOCIImageToDirectory(ctx context.Context, source string) (string, map[string]FileInfo, error) {
+	fInfoMap := make(map[string]FileInfo)
 
 	log.G(ctx).Info("unpacking oci image")
 
@@ -351,7 +351,7 @@ func UnpackOCIImageToDirectory(ctx context.Context, source string) (string, map[
 			info.Path = filepath.Join("/", info.Path)
 		}
 
-		fInfoMap[info.Path] = FInfo{
+		fInfoMap[info.Path] = FileInfo{
 			Name: info.Path,
 			Uid:  info.UserID,
 			Gid:  info.GroupID,

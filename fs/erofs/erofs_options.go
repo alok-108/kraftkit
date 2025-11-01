@@ -15,7 +15,7 @@ type ErofsCreateOptions struct {
 
 	// Map of file information for each file in the Erofs archive
 	// This is used to set the uid, gid, and mode for each file.
-	fInfoMap map[string]fsutils.FInfo
+	fInfoMap map[string]fsutils.FileInfo
 }
 
 type ErofsCreateOption func(*ErofsCreateOptions) error
@@ -31,7 +31,7 @@ func WithAllRoot(allRoot bool) ErofsCreateOption {
 
 // withFileInfoMap sets the file information map for the Erofs archive.
 // This should not be used externally.
-func withFileInfoMap(fInfoMap map[string]fsutils.FInfo) ErofsCreateOption {
+func withFileInfoMap(fInfoMap map[string]fsutils.FileInfo) ErofsCreateOption {
 	return func(eo *ErofsCreateOptions) error {
 		eo.fInfoMap = fInfoMap
 		return nil

@@ -390,7 +390,7 @@ func (w *writer) populateInodes() error {
 			}
 		}
 
-		var originalFInfo *fsutils.FInfo
+		var originalFInfo *fsutils.FileInfo
 		if w.opts.fInfoMap != nil {
 			// DirFS believes this is the root directory, so we set as such
 			toCheckForName := filepath.Join("/", path)
@@ -560,7 +560,7 @@ func (w *writer) findInodeAtPath(path string) (uint64, error) {
 	return uint64(nid), nil
 }
 
-func toInode(fi fs.FileInfo, nlink int, allRoot bool, originalFInfo *fsutils.FInfo) any {
+func toInode(fi fs.FileInfo, nlink int, allRoot bool, originalFInfo *fsutils.FileInfo) any {
 	var uid, gid int
 	mode := fi.Mode()
 
