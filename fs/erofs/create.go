@@ -31,7 +31,7 @@ func CreateFS(ctx context.Context, output string, source string, opts ...ErofsCr
 		if err := c.CreateFSFromOCIImage(ctx, writer, source, opts...); err != nil {
 			return fmt.Errorf("could not create EroFS archive from OCI image: %w", err)
 		}
-	case IsErofsFile(source):
+	case fsutils.IsErofsFile(source):
 		if err := c.CreateFSFromErofs(ctx, writer, source, opts...); err != nil {
 			return fmt.Errorf("could not create EroFS archive from CPIO file: %w", err)
 		}
