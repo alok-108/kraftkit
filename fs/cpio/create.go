@@ -72,7 +72,7 @@ func CreateFS(ctx context.Context, output string, source string, opts ...CpioCre
 		if err := c.CreateFSFromOCIImage(ctx, writer, source); err != nil {
 			return fmt.Errorf("could not create CPIO archive from OCI image: %w", err)
 		}
-	case IsCpioFile(source):
+	case fsutils.IsCpioFile(source):
 		if err := c.CreateFSFromCpio(ctx, writer, source); err != nil {
 			return fmt.Errorf("could not create CPIO archive from CPIO file: %w", err)
 		}
