@@ -24,7 +24,9 @@ type tarball struct {
 
 func NewFromTarball(_ context.Context, tb string, opts ...InitrdOption) (Initrd, error) {
 	rootfs := tarball{
-		opts: InitrdOptions{},
+		opts: InitrdOptions{
+			fsType: FsTypeCpio,
+		},
 		path: tb,
 	}
 

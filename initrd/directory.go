@@ -26,7 +26,9 @@ type directory struct {
 func NewFromDirectory(_ context.Context, dir string, opts ...InitrdOption) (Initrd, error) {
 	dir = strings.TrimRight(dir, string(filepath.Separator))
 	rootfs := directory{
-		opts: InitrdOptions{},
+		opts: InitrdOptions{
+			fsType: FsTypeCpio,
+		},
 		path: dir,
 	}
 

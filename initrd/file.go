@@ -23,7 +23,9 @@ type file struct {
 // is provided as a mechanism for satisfying the Initrd interface.
 func NewFromFile(_ context.Context, path string, opts ...InitrdOption) (Initrd, error) {
 	initrd := file{
-		opts: InitrdOptions{},
+		opts: InitrdOptions{
+			fsType: FsTypeCpio,
+		},
 		path: path,
 	}
 

@@ -180,7 +180,9 @@ func NewFromDockerfile(ctx context.Context, path string, opts ...InitrdOption) (
 	}
 
 	initrd := dockerfile{
-		opts:       InitrdOptions{},
+		opts: InitrdOptions{
+			fsType: FsTypeCpio,
+		},
 		dockerfile: path,
 	}
 

@@ -65,6 +65,9 @@ func NewFromOCIImage(ctx context.Context, path string, opts ...InitrdOption) (In
 	initrd := ociimage{
 		imageName: path,
 		ref:       ref,
+		opts: InitrdOptions{
+			fsType: FsTypeCpio,
+		},
 	}
 
 	for _, opt := range opts {
