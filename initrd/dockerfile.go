@@ -5,12 +5,10 @@
 package initrd
 
 import (
-	"archive/tar"
 	"context"
 	"encoding/csv"
 	"fmt"
 	"io"
-	"math/rand/v2"
 	"net"
 	"os"
 	"path/filepath"
@@ -23,7 +21,8 @@ import (
 	"google.golang.org/grpc/status"
 	"kraftkit.sh/cmdfactory"
 	"kraftkit.sh/config"
-	"kraftkit.sh/cpio"
+	"kraftkit.sh/fs/cpio"
+	"kraftkit.sh/fs/erofs"
 	"kraftkit.sh/log"
 
 	sfile "github.com/anchore/stereoscope/pkg/file"
@@ -181,7 +180,9 @@ func NewFromDockerfile(ctx context.Context, path string, opts ...InitrdOption) (
 	}
 
 	initrd := dockerfile{
-		opts:       InitrdOptions{},
+		opts: InitrdOptions{
+			fsType: FsTypeCpio,
+		},
 		dockerfile: path,
 	}
 
@@ -262,12 +263,6 @@ func (initrd *dockerfile) Build(ctx context.Context) (string, error) {
 
 		initrd.opts.output = fi.Name()
 	}
-
-	outputDir, err := os.MkdirTemp("", "")
-	if err != nil {
-		return "", fmt.Errorf("could not make temporary directory: %w", err)
-	}
-	defer os.RemoveAll(outputDir)
 
 	tarOutput, err := os.CreateTemp("", "")
 	if err != nil {
@@ -568,201 +563,28 @@ func (initrd *dockerfile) Build(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("could not create output directory: %w", err)
 	}
 
-	cpioFile, err := os.OpenFile(initrd.opts.output, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o644)
-	if err != nil {
-		return "", fmt.Errorf("could not open initramfs file: %w", err)
-	}
-
-	defer cpioFile.Close()
-
-	cpioWriter := cpio.NewWriter(cpioFile)
-
-	defer cpioWriter.Close()
-
-	tarArchive, err := os.Open(tarOutput.Name())
-	if err != nil {
-		return "", fmt.Errorf("could not open output tarball: %w", err)
-	}
-
-	defer tarArchive.Close()
-
-	tarReader := tar.NewReader(tarArchive)
-
-	type inodeCount struct {
-		Count int
-		Inode int32
-	}
-	fileCount := map[string]inodeCount{}
-
-	// Pass once to count links
-	for {
-		tarHeader, err := tarReader.Next()
-		if err == io.EOF {
-			break // End of archive
-		}
+	switch initrd.opts.fsType {
+	case FsTypeErofs:
+		return initrd.opts.output, erofs.CreateFS(ctx, initrd.opts.output, tarOutput.Name(),
+			erofs.WithAllRoot(!initrd.opts.keepOwners),
+		)
+	case FsTypeCpio:
+		err := cpio.CreateFS(ctx, initrd.opts.output, tarOutput.Name(),
+			cpio.WithAllRoot(!initrd.opts.keepOwners),
+		)
 		if err != nil {
-			return "", fmt.Errorf("could not read tar header: %w", err)
+			return "", fmt.Errorf("could not create CPIO archive: %w", err)
+		}
+		if initrd.opts.compress {
+			if err := compressFiles(initrd.opts.output, initrd.opts.output); err != nil {
+				return "", fmt.Errorf("could not compress files: %w", err)
+			}
 		}
 
-		if tarHeader.Typeflag == tar.TypeLink {
-			if _, ok := fileCount[tarHeader.Linkname]; !ok {
-				fileCount[tarHeader.Linkname] = inodeCount{
-					Count: 1,
-					Inode: rand.Int32(),
-				}
-			} else {
-				fileCount[tarHeader.Linkname] = inodeCount{
-					Count: fileCount[tarHeader.Linkname].Count + 1,
-					Inode: fileCount[tarHeader.Linkname].Inode,
-				}
-			}
-		} else if tarHeader.Typeflag == tar.TypeReg {
-			if _, ok := fileCount[tarHeader.Name]; !ok {
-				fileCount[tarHeader.Name] = inodeCount{
-					Count: 1,
-					Inode: rand.Int32(),
-				}
-			} else {
-				fileCount[tarHeader.Name] = inodeCount{
-					Count: fileCount[tarHeader.Name].Count + 1,
-					Inode: fileCount[tarHeader.Linkname].Inode,
-				}
-			}
-		}
+		return initrd.opts.output, nil
+	default:
+		return "", fmt.Errorf("unknown filesystem type %s", initrd.opts.fsType)
 	}
-
-	_, err = tarArchive.Seek(0, io.SeekStart)
-	if err != nil {
-		return "", fmt.Errorf("could not seek to start of tarball: %w", err)
-	}
-
-	tarReader = tar.NewReader(tarArchive)
-
-	for {
-		tarHeader, err := tarReader.Next()
-		if err == io.EOF {
-			break // End of archive
-		}
-		if err != nil {
-			return "", fmt.Errorf("could not read tar header: %w", err)
-		}
-
-		internal := fmt.Sprintf("./%s", filepath.Clean(tarHeader.Name))
-
-		cpioHeader := &cpio.Header{
-			Name:    internal,
-			Mode:    cpio.FileMode(tarHeader.FileInfo().Mode().Perm()),
-			ModTime: tarHeader.FileInfo().ModTime(),
-			Size:    tarHeader.FileInfo().Size(),
-		}
-
-		switch tarHeader.Typeflag {
-		case tar.TypeBlock:
-			log.G(ctx).
-				WithField("file", tarHeader.Name).
-				Warn("ignoring block devices")
-			continue
-
-		case tar.TypeChar:
-			log.G(ctx).
-				WithField("file", tarHeader.Name).
-				Warn("ignoring char devices")
-			continue
-
-		case tar.TypeFifo:
-			log.G(ctx).
-				WithField("file", tarHeader.Name).
-				Warn("ignoring fifo files")
-			continue
-
-		case tar.TypeSymlink:
-			log.G(ctx).
-				WithField("src", tarHeader.Name).
-				WithField("link", tarHeader.Linkname).
-				Trace("symlinking")
-
-			cpioHeader.Mode |= cpio.TypeSymlink
-			cpioHeader.Linkname = tarHeader.Linkname
-			cpioHeader.Size = int64(len(tarHeader.Linkname))
-
-			if err := cpioWriter.WriteHeader(cpioHeader); err != nil {
-				return "", fmt.Errorf("could not write CPIO header: %w", err)
-			}
-
-			if _, err := cpioWriter.Write([]byte(tarHeader.Linkname)); err != nil {
-				return "", fmt.Errorf("could not write CPIO data for %s: %w", internal, err)
-			}
-
-		case tar.TypeLink:
-			log.G(ctx).
-				WithField("src", tarHeader.Name).
-				WithField("link", tarHeader.Linkname).
-				Trace("hardlinking")
-
-			cpioHeader.Mode |= cpio.TypeReg
-			cpioHeader.Linkname = tarHeader.Linkname
-			cpioHeader.Size = 0
-			if _, ok := fileCount[tarHeader.Linkname]; ok {
-				cpioHeader.Links = fileCount[tarHeader.Linkname].Count
-				cpioHeader.Inode = int64(fileCount[tarHeader.Linkname].Inode)
-			}
-			if err := cpioWriter.WriteHeader(cpioHeader); err != nil {
-				return "", fmt.Errorf("could not write CPIO header: %w", err)
-			}
-
-		case tar.TypeReg:
-			log.G(ctx).
-				WithField("src", tarHeader.Name).
-				WithField("dst", internal).
-				Trace("copying")
-
-			cpioHeader.Mode |= cpio.TypeReg
-			cpioHeader.Linkname = tarHeader.Linkname
-			cpioHeader.Size = tarHeader.FileInfo().Size()
-			if _, ok := fileCount[tarHeader.Name]; ok {
-				cpioHeader.Links = fileCount[tarHeader.Name].Count
-				cpioHeader.Inode = int64(fileCount[tarHeader.Name].Inode)
-			}
-
-			if err := cpioWriter.WriteHeader(cpioHeader); err != nil {
-				return "", fmt.Errorf("could not write CPIO header: %w", err)
-			}
-
-			data, err := io.ReadAll(tarReader)
-			if err != nil {
-				return "", fmt.Errorf("could not read file: %w", err)
-			}
-
-			if _, err := cpioWriter.Write(data); err != nil {
-				return "", fmt.Errorf("could not write CPIO data for %s: %w", internal, err)
-			}
-
-		case tar.TypeDir:
-			log.G(ctx).
-				WithField("dst", internal).
-				Trace("mkdir")
-
-			cpioHeader.Mode |= cpio.TypeDir
-
-			if err := cpioWriter.WriteHeader(cpioHeader); err != nil {
-				return "", fmt.Errorf("could not write CPIO header: %w", err)
-			}
-
-		default:
-			log.G(ctx).
-				WithField("file", tarHeader.Name).
-				WithField("type", tarHeader.Typeflag).
-				Warn("unsupported file type")
-		}
-	}
-
-	if initrd.opts.compress {
-		if err := compressFiles(initrd.opts.output, cpioWriter, cpioFile); err != nil {
-			return "", fmt.Errorf("could not compress files: %w", err)
-		}
-	}
-
-	return initrd.opts.output, nil
 }
 
 // Options implements Initrd.

@@ -9,6 +9,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"kraftkit.sh/fs/cpio"
+	"kraftkit.sh/fs/erofs"
 )
 
 type file struct {
@@ -20,7 +23,9 @@ type file struct {
 // is provided as a mechanism for satisfying the Initrd interface.
 func NewFromFile(_ context.Context, path string, opts ...InitrdOption) (Initrd, error) {
 	initrd := file{
-		opts: InitrdOptions{},
+		opts: InitrdOptions{
+			fsType: FsTypeCpio,
+		},
 		path: path,
 	}
 
@@ -60,22 +65,23 @@ func (initrd *file) Name() string {
 }
 
 // Build implements Initrd.
-func (initrd *file) Build(_ context.Context) (string, error) {
+func (initrd *file) Build(ctx context.Context) (string, error) {
 	if initrd.opts.output == initrd.path {
 		return "", fmt.Errorf("CPIO archive path is the same as the source path, this is not allowed as it creates corrupted archives")
 	}
 
-	input, err := os.ReadFile(initrd.path)
-	if err != nil {
-		return "", fmt.Errorf("reading input file: %w", err)
+	switch initrd.opts.fsType {
+	case FsTypeErofs:
+		return initrd.opts.output, erofs.CreateFS(ctx, initrd.opts.output, initrd.path,
+			erofs.WithAllRoot(!initrd.opts.keepOwners),
+		)
+	case FsTypeCpio:
+		return initrd.opts.output, cpio.CreateFS(ctx, initrd.opts.output, initrd.path,
+			cpio.WithAllRoot(!initrd.opts.keepOwners),
+		)
+	default:
+		return "", fmt.Errorf("unknown filesystem type %s", initrd.opts.fsType)
 	}
-
-	err = os.WriteFile(initrd.opts.output, input, 0o644)
-	if err != nil {
-		return "", fmt.Errorf("writing output file: %w", err)
-	}
-
-	return initrd.opts.output, nil
 }
 
 // Options implements Initrd.

@@ -13,17 +13,20 @@ import (
 	"os"
 	"testing"
 
-	"kraftkit.sh/cpio"
+	"kraftkit.sh/fs/cpio"
 	"kraftkit.sh/initrd"
 )
 
-func TestNewFromOCIImage(t *testing.T) {
-	const rootfsDockerfile = "kraftkit.sh/unit-test-ociimage:latest"
+func TestNewFromOCIImageToCPIO(t *testing.T) {
+	const rootfsDockerfile = "index.unikraft.io/kraftkit.sh/unit-test-ociimage:latest"
 
 	ctx := context.Background()
 
-	ird, err := initrd.NewFromOCIImage(ctx, rootfsDockerfile,
+	ird, err := initrd.NewFromOCIImage(
+		ctx,
+		rootfsDockerfile,
 		initrd.WithArchitecture("x86_64"),
+		initrd.WithOutputType(initrd.FsTypeCpio),
 	)
 	if err != nil {
 		t.Fatal("NewFromOCIImage:", err)

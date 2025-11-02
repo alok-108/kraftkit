@@ -55,14 +55,15 @@ type GithubAction struct {
 	Timeout uint64 `long:"timeout" env:"INPUT_TIMEOUT" usage:"Timeout for the unikernel"`
 
 	// Packaging flags
-	Args     string `long:"args" env:"INPUT_ARGS" usage:"Arguments to pass to the unikernel"`
-	Rootfs   string `long:"rootfs" env:"INPUT_ROOTFS" usage:"Include a rootfs at path"`
-	Memory   string `long:"memory" env:"INPUT_MEMORY" usage:"Set the memory size"`
-	Name     string `long:"name" env:"INPUT_NAME" usage:"Set the name of the output"`
-	Output   string `long:"output" env:"INPUT_OUTPUT" usage:"Set the output path"`
-	Push     bool   `long:"push" env:"INPUT_PUSH" usage:"Push the output"`
-	Strategy string `long:"strategy" env:"INPUT_STRATEGY" usage:"Merge strategy to use when packaging"`
-	Dbg      bool   `long:"dbg" env:"INPUT_DBG" usage:"Use the debug kernel"`
+	Args       string `long:"args" env:"INPUT_ARGS" usage:"Arguments to pass to the unikernel"`
+	Rootfs     string `long:"rootfs" env:"INPUT_ROOTFS" usage:"Include a rootfs at path"`
+	RootfsType string `long:"rootfs_type" env:"INPUT_ROOTFS_TYPE" usage:"Type of rootfs to build (cpio/erofs)" default:"cpio"`
+	Memory     string `long:"memory" env:"INPUT_MEMORY" usage:"Set the memory size"`
+	Name       string `long:"name" env:"INPUT_NAME" usage:"Set the name of the output"`
+	Output     string `long:"output" env:"INPUT_OUTPUT" usage:"Set the output path"`
+	Push       bool   `long:"push" env:"INPUT_PUSH" usage:"Push the output"`
+	Strategy   string `long:"strategy" env:"INPUT_STRATEGY" usage:"Merge strategy to use when packaging"`
+	Dbg        bool   `long:"dbg" env:"INPUT_DBG" usage:"Use the debug kernel"`
 
 	// Internal attributes
 	project    app.Application

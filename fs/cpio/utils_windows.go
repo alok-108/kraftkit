@@ -5,12 +5,11 @@
 // Copyright (c) 2024, Unikraft GmbH and The KraftKit Authors.
 // Licensed under the BSD-3-Clause License (the "License").
 // You may not use this file except in compliance with the License.
-package initrd
+package cpio
 
 import (
 	"io/fs"
 
-	"kraftkit.sh/cpio"
 )
 
-func FileInfoToCPIOHeader(info fs.FileInfo, header *cpio.Header) {}
+func FileInfoToCPIOHeader(info fs.FileInfo, header *Header) {}

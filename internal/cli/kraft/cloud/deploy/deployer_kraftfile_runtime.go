@@ -98,19 +98,21 @@ func (deployer *deployerKraftfileRuntime) Deploy(ctx context.Context, opts *Depl
 	}
 
 	packs, err := pkg.Pkg(ctx, &pkg.PkgOptions{
-		Architecture: "x86_64",
-		Compress:     opts.Compress,
-		Format:       "oci",
-		Kraftfile:    opts.Kraftfile,
-		Name:         pkgName,
-		NoPull:       false,
-		Platform:     "kraftcloud",
-		Project:      opts.Project,
-		Push:         true,
-		Rootfs:       opts.Rootfs,
-		Runtime:      opts.Runtime,
-		Strategy:     opts.Strategy,
-		Workdir:      opts.Workdir,
+		Architecture:   "x86_64",
+		Compress:       opts.Compress,
+		Format:         "oci",
+		KeepFileOwners: opts.KeepFileOwners,
+		Kraftfile:      opts.Kraftfile,
+		Name:           pkgName,
+		NoPull:         false,
+		Platform:       "kraftcloud",
+		Project:        opts.Project,
+		Push:           true,
+		Rootfs:         opts.Rootfs,
+		RootfsType:     opts.RootfsType,
+		Runtime:        opts.Runtime,
+		Strategy:       opts.Strategy,
+		Workdir:        opts.Workdir,
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "DENIED") && strings.Contains(err.Error(), "exceed") {

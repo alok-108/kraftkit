@@ -108,7 +108,7 @@ func (p *packagerKraftfileUnikraft) Pack(ctx context.Context, opts *PkgOptions, 
 			"CONFIG_LIBPOSIX_VFS_FSTAB_BUILTIN_EINITRD",
 			"CONFIG_LIBPOSIX_VFS_FSTAB_FALLBACK_EINITRD",
 		) {
-			if rootfs, cmds, envs, err = utils.BuildRootfs(ctx, opts.Workdir, opts.Rootfs, opts.Compress, targ.Architecture().String()); err != nil {
+			if rootfs, cmds, envs, err = utils.BuildRootfs(ctx, opts.Workdir, opts.Rootfs, opts.Compress, opts.KeepFileOwners, targ.Architecture().String(), opts.RootfsType); err != nil {
 				return nil, fmt.Errorf("could not build rootfs: %w", err)
 			}
 		}

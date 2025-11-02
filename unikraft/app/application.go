@@ -602,7 +602,7 @@ func (app *application) Configure(ctx context.Context, tc target.Target, extra k
 			"CONFIG_LIBPOSIX_VFS_FSTAB_EINITRD_PATH",
 			filepath.Join(
 				app.outDir,
-				fmt.Sprintf(initrd.DefaultInitramfsArchFileName, tc.Architecture().String()),
+				fmt.Sprintf(initrd.DefaultInitramfsArchFileName, tc.Architecture().String(), initrd.FsTypeCpio.String()),
 			),
 		)
 	}
@@ -619,7 +619,7 @@ func (app *application) Configure(ctx context.Context, tc target.Target, extra k
 			values.Set("CONFIG_LIBVFSCORE_AUTOMOUNT_EINITRD_PATH",
 				filepath.Join(
 					app.outDir,
-					fmt.Sprintf(initrd.DefaultInitramfsArchFileName, tc.Architecture().String()),
+					fmt.Sprintf(initrd.DefaultInitramfsArchFileName, tc.Architecture().String(), initrd.FsTypeCpio.String()),
 				),
 			)
 		}

@@ -9,6 +9,7 @@ import (
 	kcinstances "sdk.kraft.cloud/instances"
 	kcservices "sdk.kraft.cloud/services"
 
+	"kraftkit.sh/initrd"
 	"kraftkit.sh/internal/cli/kraft/build"
 )
 
@@ -43,6 +44,10 @@ func (deployer *deployerKraftfileUnikraft) Deployable(ctx context.Context, opts 
 		return false, fmt.Errorf("cannot package without unikraft attribute")
 	}
 
+	if opts.RootfsType == initrd.FsTypeErofs {
+		return false, fmt.Errorf("Unikraft does not currently have support for erofs initrds (contributions welcome!)")
+	}
+
 	deployer.args = args
 
 	return true, nil
@@ -50,20 +55,22 @@ func (deployer *deployerKraftfileUnikraft) Deployable(ctx context.Context, opts 
 
 func (deployer *deployerKraftfileUnikraft) Deploy(ctx context.Context, opts *DeployOptions, args ...string) (*kcclient.ServiceResponse[kcinstances.GetResponseItem], *kcclient.ServiceResponse[kcservices.GetResponseItem], error) {
 	if err := build.Build(ctx, &build.BuildOptions{
-		Architecture: "x86_64",
-		DotConfig:    opts.DotConfig,
-		ForcePull:    opts.ForcePull,
-		Jobs:         opts.Jobs,
-		KernelDbg:    opts.KernelDbg,
-		NoCache:      opts.NoCache,
-		NoConfigure:  opts.NoConfigure,
-		NoFast:       opts.NoFast,
-		NoFetch:      opts.NoFetch,
-		NoUpdate:     opts.NoUpdate,
-		Platform:     "kraftcloud",
-		Rootfs:       opts.Rootfs,
-		SaveBuildLog: opts.SaveBuildLog,
-		Workdir:      opts.Workdir,
+		Architecture:   "x86_64",
+		DotConfig:      opts.DotConfig,
+		ForcePull:      opts.ForcePull,
+		Jobs:           opts.Jobs,
+		KeepFileOwners: opts.KeepFileOwners,
+		KernelDbg:      opts.KernelDbg,
+		NoCache:        opts.NoCache,
+		NoConfigure:    opts.NoConfigure,
+		NoFast:         opts.NoFast,
+		NoFetch:        opts.NoFetch,
+		NoUpdate:       opts.NoUpdate,
+		Platform:       "kraftcloud",
+		Rootfs:         opts.Rootfs,
+		RootfsType:     opts.RootfsType,
+		SaveBuildLog:   opts.SaveBuildLog,
+		Workdir:        opts.Workdir,
 	}); err != nil {
 		return nil, nil, fmt.Errorf("could not complete build: %w", err)
 	}

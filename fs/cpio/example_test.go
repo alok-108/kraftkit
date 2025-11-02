@@ -12,7 +12,7 @@ import (
 	"log"
 	"os"
 
-	"kraftkit.sh/cpio"
+	"kraftkit.sh/fs/cpio"
 )
 
 func Example() {
