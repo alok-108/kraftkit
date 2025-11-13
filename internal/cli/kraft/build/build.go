@@ -53,7 +53,7 @@ type BuildOptions struct {
 	Project        app.Application `noattribute:"true"`
 	Rootfs         string          `long:"rootfs" usage:"Specify a path to use as root file system (can be volume or initramfs)"`
 	RootfsType     initrd.FsType   `noattribute:"true"`
-	KeepFileOwners bool            `noattribute:"true"`
+	KeepFileOwners bool            `local:"true" long:"keep-file-owners" usage:"Keep file owners (user:group) in the rootfs (false sets 'root:root')"`
 	SaveBuildLog   string          `long:"build-log" usage:"Use the specified file to save the output from the build"`
 	Target         *target.Target  `noattribute:"true"`
 	TargetName     string          `long:"target" short:"t" usage:"Build a particular known target"`
@@ -79,6 +79,10 @@ func Build(ctx context.Context, opts *BuildOptions, args ...string) error {
 		} else {
 			opts.Workdir = args[0]
 		}
+	}
+
+	if opts.Project != nil && opts.Project.InitrdFsType().String() != "" && opts.RootfsType == "" {
+		opts.RootfsType = opts.Project.InitrdFsType()
 	}
 
 	opts.statistics = map[string]string{}
@@ -128,6 +132,7 @@ func Build(ctx context.Context, opts *BuildOptions, args ...string) error {
 	// and the packaging step may perform a build of the rootfs again.  Ultimately
 	// this prevents re-builds.
 	opts.Project.SetRootfs(opts.Rootfs)
+	opts.Project.SetInitrdFsType(opts.RootfsType)
 
 	err = build.Build(ctx, opts, args...)
 	if err != nil {
@@ -200,6 +205,10 @@ func (opts *BuildOptions) Pre(cmd *cobra.Command, args []string) error {
 	}
 
 	cmd.SetContext(ctx)
+
+	if cmd.Flag("rootfs-type").Changed && cmd.Flag("rootfs-type").Value.String() != "" {
+		opts.RootfsType = initrd.FsType(cmd.Flag("rootfs-type").Value.String())
+	}
 
 	return nil
 }
