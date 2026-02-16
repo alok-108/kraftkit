@@ -8,15 +8,16 @@ package pkg
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"kraftkit.sh/config"
 	"kraftkit.sh/initrd"
-	"kraftkit.sh/internal/cli/kraft/utils"
 	"kraftkit.sh/log"
 	"kraftkit.sh/pack"
 	"kraftkit.sh/packmanager"
 	"kraftkit.sh/tui/processtree"
+	"kraftkit.sh/unikraft"
 	"kraftkit.sh/unikraft/arch"
 	"kraftkit.sh/unikraft/plat"
 	"kraftkit.sh/unikraft/target"
@@ -66,7 +67,27 @@ func (p *packagerCliKernel) Pack(ctx context.Context, opts *PkgOptions, args ...
 	var cmds []string
 	var penvs []string
 	var rootfs initrd.Initrd
-	if rootfs, cmds, penvs, err = utils.BuildRootfs(ctx, opts.Workdir, opts.Rootfs, opts.Compress, opts.KeepFileOwners, targ.Architecture().String(), opts.RootfsType); err != nil {
+	if rootfs, cmds, penvs, err = initrd.BuildRootfs(
+		ctx,
+		append(opts.InitrdOptions,
+			initrd.WithRootfsPath(opts.Rootfs),
+			initrd.WithWorkdir(opts.Workdir),
+			initrd.WithKeepOwners(opts.KeepFileOwners),
+			initrd.WithOutput(filepath.Join(
+				opts.Workdir,
+				unikraft.BuildDir,
+				fmt.Sprintf(initrd.DefaultInitramfsArchFileName, targ.Architecture().String()),
+			)),
+			initrd.WithOutputType(opts.RootfsType),
+			initrd.WithCacheDir(filepath.Join(
+				opts.Workdir,
+				unikraft.VendorDir,
+				"rootfs-cache",
+			)),
+			initrd.WithArchitecture(targ.Architecture().String()),
+			initrd.WithCompression(opts.Compress),
+		)...,
+	); err != nil {
 		return nil, fmt.Errorf("could not build rootfs: %w", err)
 	}
 
