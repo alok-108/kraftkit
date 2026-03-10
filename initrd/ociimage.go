@@ -11,6 +11,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -45,10 +46,14 @@ func NewFromOCIImage(ctx context.Context, path string, opts ...InitrdOption) (In
 	// Strip protocol prefix if present (OCI references don't use http:// or https://)
 	path = stripProtocolPrefix(path)
 
-	// Parse the reference to validate it
-	_, err := name.ParseReference(path)
+	// Parse the reference to validate it, then do an actual DNS lookup
+	// to confirm the registry hostname is resolvable.
+	ref, err := name.ParseReference(path)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse image reference: %w", err)
+	}
+	if _, err := net.DefaultResolver.LookupHost(ctx, ref.Context().RegistryStr()); err != nil {
+		return nil, fmt.Errorf("could not resolve registry server from image reference: %w", err)
 	}
 
 	initrd := ociimage{
