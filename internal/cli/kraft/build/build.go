@@ -39,6 +39,7 @@ type BuildOptions struct {
 	Architecture   string                `long:"arch" short:"m" usage:"Filter the creation of the build by architecture of known targets (x86_64/arm64/arm)"`
 	DotConfig      string                `long:"config" short:"c" usage:"Override the path to the KConfig .config file"`
 	Env            []string              `long:"env" short:"e" usage:"Set environment variables to be built in the unikernel" split:"false"`
+	Toolchain      []string              `long:"toolchain" short:"T" usage:"Override toolchain variables for this build (e.g. CC=clang LD=ld.lld)" split:"false"`
 	ForcePull      bool                  `long:"force-pull" usage:"Force pulling packages before building"`
 	InitrdOptions  []initrd.InitrdOption `noattribute:"true"`
 	Jobs           int                   `long:"jobs" short:"j" usage:"Allow N jobs at once"`
@@ -398,4 +399,18 @@ func moveFile(src, dst string) error {
 	}
 
 	return nil
+}
+
+func mergeToolchain(global map[string]string, flags []string) map[string]string {
+	result := map[string]string{}
+	for k, v := range global {
+		result[k] = v
+	}
+	for _, f := range flags {
+		parts := strings.SplitN(f, "=", 2)
+		if len(parts) == 2 {
+			result[parts[0]] = parts[1]
+		}
+	}
+	return result
 }
