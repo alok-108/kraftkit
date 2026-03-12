@@ -7,6 +7,68 @@ package config
 
 import "testing"
 
+func TestConfigManagerUnset_MapField(t *testing.T) {
+	unset := func(t *testing.T, cfg *KraftKit, key string) {
+		t.Helper()
+		cm := &ConfigManager[KraftKit]{Config: cfg}
+		if err := cm.Unset(key); err != nil {
+			t.Fatalf("Unset(%q) returned unexpected error: %v", key, err)
+		}
+	}
+
+	t.Run("Remove existing map key", func(t *testing.T) {
+		cfg := &KraftKit{Toolchain: map[string]string{"CC": "clang", "UK_CFLAGS": "-O2"}}
+		unset(t, cfg, "toolchain.CC")
+		if _, ok := cfg.Toolchain["CC"]; ok {
+			t.Error("expected toolchain.CC to be removed, but it still exists")
+		}
+		if expect, got := "-O2", cfg.Toolchain["UK_CFLAGS"]; expect != got {
+			t.Errorf("Toolchain[UK_CFLAGS]: expected %q, got %q", expect, got)
+		}
+	})
+
+	t.Run("Unset on nil map is a no-op", func(t *testing.T) {
+		cfg := &KraftKit{}
+		unset(t, cfg, "toolchain.CC")
+		if cfg.Toolchain != nil {
+			t.Error("expected Toolchain to remain nil")
+		}
+	})
+
+	t.Run("Unset string field resets to zero value", func(t *testing.T) {
+		cfg := &KraftKit{Editor: "vim"}
+		unset(t, cfg, "editor")
+		if cfg.Editor != "" {
+			t.Errorf("Editor: expected empty string, got %q", cfg.Editor)
+		}
+	})
+
+	t.Run("Unset nested struct field resets to zero value", func(t *testing.T) {
+		cfg := &KraftKit{}
+		cfg.Log.Level = "debug"
+		unset(t, cfg, "log.level")
+		if cfg.Log.Level != "" {
+			t.Errorf("Log.Level: expected empty string, got %q", cfg.Log.Level)
+		}
+	})
+
+	t.Run("Error on unknown key", func(t *testing.T) {
+		cfg := &KraftKit{}
+		cm := &ConfigManager[KraftKit]{Config: cfg}
+		if err := cm.Unset("nonexistent"); err == nil {
+			t.Error("expected error for unknown key, got nil")
+		}
+	})
+
+	t.Run("Error on too deep map traversal", func(t *testing.T) {
+		cfg := &KraftKit{}
+		cm := &ConfigManager[KraftKit]{Config: cfg}
+		if err := cm.Unset("toolchain.CC.extra"); err == nil {
+			t.Error("expected error for toolchain.CC.extra, got nil")
+		}
+	})
+}
+
 func TestConfigManagerSet_MapField(t *testing.T) {
 	// set is a helper that creates a ConfigManager and calls Set(key, val)
 	set := func(t *testing.T, cfg *KraftKit, key, val string) {
