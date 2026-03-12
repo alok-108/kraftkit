@@ -15,6 +15,7 @@ import (
 
 	"kraftkit.sh/internal/cli/kraft/system/list"
 	"kraftkit.sh/internal/cli/kraft/system/set"
+	"kraftkit.sh/internal/cli/kraft/system/unset"
 )
 
 type System struct{}
@@ -35,6 +36,7 @@ func NewCmd() *cobra.Command {
 
 	cmd.AddCommand(set.NewCmd())
 	cmd.AddCommand(list.NewCmd())
+	cmd.AddCommand(unset.NewCmd())
 
 	return cmd
 }
