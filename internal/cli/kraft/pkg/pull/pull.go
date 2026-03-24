@@ -111,6 +111,7 @@ func (opts *PullOptions) Run(ctx context.Context, args []string) error {
 	var err error
 	var project app.Application
 	var processes []*paraprogress.Process
+	auths := config.G[config.KraftKit](ctx).Auth
 
 	if len(opts.Workdir) == 0 {
 		opts.Workdir, err = os.Getwd()
@@ -464,6 +465,7 @@ func (opts *PullOptions) Run(ctx context.Context, args []string) error {
 					pack.WithPullWorkdir(opts.Output),
 					pack.WithPullChecksum(!opts.NoChecksum),
 					pack.WithPullCache(!opts.Update),
+					pack.WithPullAuthConfig(auths),
 				)
 			},
 		))
