@@ -64,6 +64,7 @@ func runVolimport(ctx context.Context, cli kcinstances.InstancesService, image, 
 		}},
 		Autostart:     ptr(true),
 		WaitTimeoutMs: ptr(int((3 * time.Second).Milliseconds())),
+		RestartPolicy: ptr(kcinstances.RestartPolicyNever),
 		Features:      []kcinstances.Feature{kcinstances.FeatureDeleteOnStop},
 	})
 	if err != nil {
