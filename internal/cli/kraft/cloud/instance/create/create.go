@@ -292,9 +292,21 @@ func Create(ctx context.Context, opts *CreateOptions, args ...string) (*kcclient
 				} else if strings.Contains(opts.Image, ":") {
 					imageBase, _, _ = strings.Cut(opts.Image, ":")
 				}
+				if strings.Contains(imageBase, "://") {
+					_, imageBase, _ = strings.Cut(imageBase, "://")
+				}
 
 				for _, instance := range instances {
-					instImageBase, _, _ := strings.Cut(instance.Image, "@")
+					var instImageBase string
+					if strings.Contains(instance.Image, "@") {
+						instImageBase, _, _ = strings.Cut(instance.Image, "@")
+					} else if strings.Contains(instance.Image, ":") {
+						instImageBase, _, _ = strings.Cut(instance.Image, ":")
+					}
+					if strings.Contains(instImageBase, "://") {
+						_, instImageBase, _ = strings.Cut(instImageBase, "://")
+					}
+
 					if instImageBase == imageBase {
 						qualifiedInstancesToRolloutOver = append(qualifiedInstancesToRolloutOver, instance)
 					}
