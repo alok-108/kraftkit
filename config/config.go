@@ -56,6 +56,11 @@ type KraftKit struct {
 	Aliases map[string]map[string]string `yaml:"aliases" noattribute:"true"`
 
 	Toolchain map[string]string `yaml:"toolchain,omitempty" noattribute:"true"`
+
+	Build struct {
+		Env      map[string]string            `yaml:"env,omitempty" env:"KRAFTKIT_BUILD_ENV" long:"build-env" usage:"Default environment variables for the build process"`
+		Profiles map[string]map[string]string `yaml:"profiles,omitempty" noattribute:"true"`
+	} `yaml:"build,omitempty"`
 }
 
 type ConfigDetail struct {

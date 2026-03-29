@@ -109,6 +109,12 @@ func (e *Process) Start(ctx context.Context) error {
 
 	log.G(ctx).Debug(e.Cmdline())
 
+	for _, env := range e.cmd.Env {
+		if strings.HasPrefix(env, "TEST_VAR=") {
+			log.G(ctx).Infof("Found TEST_VAR in environment: %s", env)
+		}
+	}
+
 	if e.opts.detach {
 		e.cmd.SysProcAttr = hostAttributes()
 		e.cmd.Stdin = nil

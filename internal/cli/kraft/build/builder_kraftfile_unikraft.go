@@ -444,6 +444,11 @@ func (build *builderKraftfileUnikraft) Build(ctx context.Context, opts *BuildOpt
 		mopts = append(mopts, make.WithVars(toolchain))
 	}
 
+	envEopts, err := opts.BuildExecOptions(ctx)
+	if err != nil {
+		return err
+	}
+
 	allEnvs := map[string]string{}
 	for k, v := range opts.Project.Env() {
 		allEnvs[k] = v
@@ -506,9 +511,11 @@ func (build *builderKraftfileUnikraft) Build(ctx context.Context, opts *BuildOpt
 						make.WithProgressFunc(w),
 						make.WithSilent(true),
 						make.WithExecOptions(
-							exec.WithStdin(iostreams.G(ctx).In),
-							exec.WithStdout(log.G(ctx).Writer()),
-							exec.WithStderr(log.G(ctx).WriterLevel(logrus.WarnLevel)),
+							append(envEopts,
+								exec.WithStdin(iostreams.G(ctx).In),
+								exec.WithStdout(log.G(ctx).Writer()),
+								exec.WithStderr(log.G(ctx).WriterLevel(logrus.WarnLevel)),
+							)...,
 						),
 					)
 				},
@@ -548,9 +555,10 @@ func (build *builderKraftfileUnikraft) Build(ctx context.Context, opts *BuildOpt
 				app.WithBuildProgressFunc(w),
 				app.WithBuildMakeOptions(append(mopts,
 					make.WithExecOptions(
-						exec.WithStdout(log.G(ctx).Writer()),
-						exec.WithStderr(log.G(ctx).WriterLevel(logrus.WarnLevel)),
-						// exec.WithOSEnv(true),
+						append(envEopts,
+							exec.WithStdout(log.G(ctx).Writer()),
+							exec.WithStderr(log.G(ctx).WriterLevel(logrus.WarnLevel)),
+						)...,
 					),
 				)...),
 				app.WithBuildLogFile(opts.SaveBuildLog),

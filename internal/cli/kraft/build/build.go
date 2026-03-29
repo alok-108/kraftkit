@@ -60,7 +60,10 @@ type BuildOptions struct {
 	KeepFileOwners bool                  `local:"true" long:"keep-file-owners" usage:"Keep file owners (user:group) in the rootfs (false sets 'root:root')"`
 	SaveBuildLog   string                `long:"build-log" usage:"Use the specified file to save the output from the build"`
 	Target         *target.Target        `noattribute:"true"`
-	TargetName     string                `long:"target" short:"t" usage:"Build a particular known target"`
+	BuildEnv       []string              `long:"build-env" usage:"Set environment variables for the build process (KEY=VALUE)"`
+	EnvFile        string                `long:"env-file" usage:"Path to an environment file (.env) for building"`
+	Profile        string                `long:"profile" usage:"The build profile to use from your config"`
+	DebugEnv       bool                  `long:"debug-env" usage:"Print the resulting environment variables for the build"`
 	Validate       bool                  `long:"validate" short:"C" usage:"Validate KConfig options against known symbols"`
 	Workdir        string                `noattribute:"true"`
 
