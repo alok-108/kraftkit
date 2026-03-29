@@ -30,7 +30,8 @@ There are many benefits in running your application as a unikernel: for more inf
 - 🍎 Native Linux, macOS and Windows support;
 - 📦 Package and push unikernels in OCI format for easy distribution;
 - 🚜 ELF binary / POSIX-compatibility support;
-- 🧰 Go SDK for building unikernels programmatically; and
+- 🧰 Go SDK for building unikernels programmatically;
+- 🚀 Advanced build-time environment variable management (CLI, .env, profiles); and
 - 🚀 _much more!_
 
 
