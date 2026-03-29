@@ -64,6 +64,7 @@ type BuildOptions struct {
 	EnvFile        string                `long:"env-file" usage:"Path to an environment file (.env) for building"`
 	Profile        string                `long:"profile" usage:"The build profile to use from your config"`
 	DebugEnv       bool                  `long:"debug-env" usage:"Print the resulting environment variables for the build"`
+	TargetName     string                `long:"target" short:"t" usage:"Build a particular known target"`
 	Validate       bool                  `long:"validate" short:"C" usage:"Validate KConfig options against known symbols"`
 	Workdir        string                `noattribute:"true"`
 
