@@ -253,7 +253,7 @@ fmt: ## Format all files according to linting preferences.
 	$(GOCILINT) format
 
 .PHONY: lint
-fmt: ## Lint all files according to linting preferences.
+lint: ## Lint all files according to linting preferences.
 	$(GOCILINT) run --build-tags "osusergo,netgo"
 
 .PHONY: cicheck
