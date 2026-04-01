@@ -6,6 +6,7 @@ package build
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	plainexec "os/exec"
@@ -34,6 +35,12 @@ import (
 	"kraftkit.sh/unikraft/target"
 )
 
+var (
+	ErrNoUnikraftCoreSpec = errors.New("cannot build without unikraft core specification")
+	ErrNoTargets          = errors.New("no targets to build")
+	ErrNoTargetsSelected  = errors.New("no targets selected to build")
+)
+
 type builderKraftfileUnikraft struct {
 	nameWidth int
 }
@@ -52,7 +59,7 @@ func (build *builderKraftfileUnikraft) Buildable(ctx context.Context, opts *Buil
 	}
 
 	if opts.Project.Unikraft(ctx) == nil && opts.Project.Template() == nil {
-		return false, fmt.Errorf("cannot build without unikraft core specification")
+		return false, ErrNoUnikraftCoreSpec
 	}
 
 	if opts.Project != nil && opts.Project.Rootfs() != "" && opts.Rootfs == "" {
@@ -349,7 +356,7 @@ func (build *builderKraftfileUnikraft) Prepare(ctx context.Context, opts *BuildO
 		// Filter project targets by any provided CLI options
 		selected := opts.Project.Targets()
 		if len(selected) == 0 {
-			return fmt.Errorf("no targets to build")
+			return ErrNoTargets
 		}
 		if !opts.All {
 			selected = target.Filter(
@@ -369,7 +376,7 @@ func (build *builderKraftfileUnikraft) Prepare(ctx context.Context, opts *BuildO
 		}
 
 		if len(selected) == 0 {
-			return fmt.Errorf("no targets selected to build")
+			return ErrNoTargetsSelected
 		}
 
 		opts.Target = &selected[0]
