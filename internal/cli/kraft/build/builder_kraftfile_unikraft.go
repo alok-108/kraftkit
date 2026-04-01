@@ -446,8 +446,7 @@ func (build *builderKraftfileUnikraft) Build(ctx context.Context, opts *BuildOpt
 		mopts = append(mopts, make.WithMaxJobs(!opts.NoFast && !config.G[config.KraftKit](ctx).NoParallel))
 	}
 
-	// Inject global toolchain variables into the make invocation
-	if toolchain := config.G[config.KraftKit](ctx).Toolchain; len(toolchain) > 0 {
+	if toolchain := mergeToolchain(config.G[config.KraftKit](ctx).Toolchain, opts.Toolchain); len(toolchain) > 0 {
 		mopts = append(mopts, make.WithVars(toolchain))
 	}
 
