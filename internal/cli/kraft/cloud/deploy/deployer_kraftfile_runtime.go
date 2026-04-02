@@ -107,6 +107,12 @@ func (deployer *deployerKraftfileRuntime) Deploy(ctx context.Context, opts *Depl
 		opts.Env = append(projectEnv, opts.Env...)
 	}
 
+	// If additional CLI args are provided after `--`, prepend the Kraftfile's
+	// cmd so that the args are appended rather than replacing the command.
+	if len(deployer.args) > 0 && opts.Project != nil && len(opts.Project.Command()) > 0 {
+		deployer.args = append(opts.Project.Command(), deployer.args...)
+	}
+
 	packs, err := pkg.Pkg(ctx, &pkg.PkgOptions{
 		Architecture:   "x86_64",
 		Compress:       opts.Compress,
