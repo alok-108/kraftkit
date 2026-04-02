@@ -259,6 +259,60 @@ func (cm *ConfigManager[C]) Set(key string, val any) error {
 	return nil
 }
 
+// Unset removes a key from the config. For map fields (e.g. toolchain.CC) it
+// deletes the map entry. For scalar fields it resets them to the zero value.
+func (cm *ConfigManager[C]) Unset(key string) error {
+	v := reflect.ValueOf(cm.Config)
+	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Struct {
+		return errors.New("cfg must be a pointer to a struct")
+	}
+
+	v = v.Elem()
+	keys := strings.Split(key, ".")
+
+	for i, k := range keys {
+		field := v.FieldByNameFunc(func(f string) bool {
+			return getYAMLTag(v.Type().FieldByName(f)) == k
+		})
+
+		if !field.IsValid() {
+			return errors.New("invalid key: " + k)
+		}
+
+		if field.Kind() == reflect.Map &&
+			field.Type().Key().Kind() == reflect.String &&
+			field.Type().Elem().Kind() == reflect.String {
+
+			if i+1 != len(keys)-1 {
+				return errors.New("cannot traverse further into map: " + k)
+			}
+			if !field.IsNil() {
+				field.SetMapIndex(reflect.ValueOf(keys[i+1]), reflect.Value{})
+			}
+			return nil
+		}
+
+		if i == len(keys)-1 {
+			if !field.CanSet() {
+				return errors.New("cannot unset field: " + k)
+			}
+			field.Set(reflect.Zero(field.Type()))
+			return nil
+		}
+
+		if field.Kind() == reflect.Ptr {
+			if field.IsNil() {
+				return nil
+			}
+			v = field.Elem()
+		} else {
+			v = field
+		}
+	}
+
+	return nil
+}
+
 // SetupListener adds an OS signal listener to the Config instance. The listener
 // listens to the `SIGHUP` signal and refreshes the Config instance. It would
 // call the provided fallback if the refresh process failed.
