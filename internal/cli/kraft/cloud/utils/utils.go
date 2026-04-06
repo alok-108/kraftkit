@@ -14,6 +14,10 @@ import (
 )
 
 func getPublicMetroCodes(ctx context.Context) ([]string, error) {
+	extraPublicNodes := []string{
+		"dal2",
+	}
+
 	client := unikraftcloud.NewMetrosClient()
 	metros, err := client.List(ctx, false)
 	if err != nil {
@@ -25,7 +29,7 @@ func getPublicMetroCodes(ctx context.Context) ([]string, error) {
 		candidates[i] = m.Code
 	}
 
-	return candidates, nil
+	return append(candidates, extraPublicNodes...), nil
 }
 
 func getPublicMetroURLs(ctx context.Context) ([]string, error) {
