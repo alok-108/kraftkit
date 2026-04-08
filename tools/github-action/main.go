@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/rancher/wrangler/pkg/signals"
 	"github.com/sirupsen/logrus"
@@ -20,6 +21,7 @@ import (
 	"kraftkit.sh/config"
 	"kraftkit.sh/internal/bootstrap"
 	"kraftkit.sh/log"
+	"kraftkit.sh/make"
 	"kraftkit.sh/manifest"
 	"kraftkit.sh/pack"
 	"kraftkit.sh/packmanager"
@@ -49,6 +51,7 @@ type GithubAction struct {
 	ForceGit      bool   `long:"force_git" env:"INPUT_FORCE_GIT" usage:"Use Git when pulling sources"`
 	Plat          string `long:"plat" env:"INPUT_PLAT" usage:"Platform to build for"`
 	Target        string `long:"target" env:"INPUT_TARGET" usage:"Name of the target to build for"`
+	Toolchain     string `long:"toolchain" env:"INPUT_TOOLCHAIN" usage:"Override toolchain variables for this build (e.g. CC=clang LD=ld.lld)"`
 
 	// Running flags
 	Execute bool   `long:"execute" env:"INPUT_EXECUTE" usage:"If to run the unikernel"`
@@ -69,6 +72,7 @@ type GithubAction struct {
 	project    app.Application
 	target     target.Target
 	initrdPath string
+	toolchain  map[string]string
 }
 
 func (opts *GithubAction) execScript(ctx context.Context, path string) error {
@@ -83,6 +87,21 @@ func (opts *GithubAction) execScript(ctx context.Context, path string) error {
 	cmd.Env = os.Environ()
 
 	return cmd.Run()
+}
+
+func (opts *GithubAction) mergeToolchain(global map[string]string, flags string) map[string]string {
+	result := map[string]string{}
+	for k, v := range global {
+		result[k] = v
+	}
+
+	for _, f := range strings.Split(flags, " ") {
+		key, value, ok := strings.Cut(f, "=")
+		if ok {
+			result[key] = value
+		}
+	}
+	return result
 }
 
 func (opts *GithubAction) Run(ctx context.Context, args []string) (err error) {
@@ -117,6 +136,10 @@ func (opts *GithubAction) Run(ctx context.Context, args []string) (err error) {
 	// scripts can access the configuration via `kraft`.
 	if err := config.M[config.KraftKit](ctx).Write(true); err != nil {
 		return fmt.Errorf("could not write configuration: %w", err)
+	}
+
+	if toolchain := opts.mergeToolchain(config.G[config.KraftKit](ctx).Toolchain, opts.Toolchain); len(toolchain) > 0 {
+		opts.toolchain = toolchain
 	}
 
 	if (len(opts.Arch) > 0 || len(opts.Plat) > 0) && len(opts.Target) > 0 {
