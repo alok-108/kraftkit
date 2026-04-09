@@ -22,12 +22,13 @@ import (
 
 // Relay relays connections from a local listener to a remote host over TLS.
 type Relay struct {
-	lAddr    string
-	rAddr    string
-	ctype    string
-	auth     string
-	name     string
-	nameAddr string
+	lAddr         string
+	rAddr         string
+	ctype         string
+	auth          string
+	name          string
+	nameAddr      string
+	allowInsecure bool
 }
 
 const Heartbeat = "\xf0\x9f\x91\x8b\xf0\x9f\x90\x92\x00"
@@ -96,7 +97,10 @@ func (r *Relay) newConnection(conn net.Conn) *connection {
 }
 
 func (r *Relay) dialRemote(ctx context.Context) (net.Conn, error) {
-	var d tls.Dialer
+	d := tls.Dialer{}
+	if r.allowInsecure {
+		d.Config = &tls.Config{InsecureSkipVerify: true} //nolint:gosec
+	}
 	return d.DialContext(ctx, "tcp4", r.rAddr)
 }
 
