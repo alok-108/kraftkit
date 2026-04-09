@@ -140,7 +140,10 @@ func NewProjectFromOptions(ctx context.Context, opts ...ProjectOption) (Applicat
 		return nil, err
 	}
 
-	app := appl.(*application)
+	app, ok := appl.(*application)
+	if !ok {
+		return nil, fmt.Errorf("could not cast application interface to internal application struct")
+	}
 
 	projectName, _ := popts.GetProjectName()
 	if app.name != "" {
