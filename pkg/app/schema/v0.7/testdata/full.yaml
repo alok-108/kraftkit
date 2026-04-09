@@ -1,0 +1,11 @@
+version: '0.7'
+name: full-app
+unikraft:
+  version: 0.16.2
+targets:
+  - name: my-target
+    architecture: x86_64
+    platform: qemu
+libraries:
+  musl:
+    version: 1.2.3
