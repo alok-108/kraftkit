@@ -87,6 +87,7 @@ func (opts *GithubAction) build(ctx context.Context) error {
 				exec.WithStdout(log.G(ctx).Writer()),
 				exec.WithStderr(log.G(ctx).WriterLevel(logrus.WarnLevel)),
 			),
+			make.WithVars(opts.toolchain),
 		),
 	)
 }
