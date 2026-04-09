@@ -315,7 +315,7 @@ func (opts *TunnelOptions) runProxy(ctx context.Context, cli kcinstances.Instanc
 
 	crinstResp, err := cli.Create(ctx, kcinstances.CreateRequest{
 		Image:    &opts.TunnelServiceImage,
-		MemoryMB: ptr(64),
+		MemoryMB: ptr(128),
 		Args:     args,
 		ServiceGroup: &kcinstances.CreateRequestServiceGroup{
 			Services: parsedPorts,
