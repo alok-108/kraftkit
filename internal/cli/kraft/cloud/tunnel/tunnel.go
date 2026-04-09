@@ -206,8 +206,9 @@ func (opts *TunnelOptions) Run(ctx context.Context, args []string) error {
 
 	// Control relay used for keeping the connection up
 	cr := Relay{
-		rAddr: net.JoinHostPort(sgFQDN, strconv.FormatUint(uint64(opts.ProxyControlPort), 10)),
-		auth:  authStr,
+		rAddr:         net.JoinHostPort(sgFQDN, strconv.FormatUint(uint64(opts.ProxyControlPort), 10)),
+		auth:          authStr,
+		allowInsecure: opts.AllowInsecure,
 	}
 	ready := make(chan struct{}, 1)
 	go func() {
@@ -229,10 +230,11 @@ func (opts *TunnelOptions) Run(ctx context.Context, args []string) error {
 		// NOTE(craciunoiuc): Only TCP is supported at the moment. This refers to the
 		// local listener, as the remote listener is always assumed to be TCP because
 		// of TLS.
-		ctype:    opts.ctypes[0],
-		auth:     authStr,
-		name:     instID,
-		nameAddr: fmt.Sprintf("%s:%d", rawInstances[0], opts.instanceProxyPorts[0]),
+		ctype:         opts.ctypes[0],
+		auth:          authStr,
+		name:          instID,
+		nameAddr:      fmt.Sprintf("%s:%d", rawInstances[0], opts.instanceProxyPorts[0]),
+		allowInsecure: opts.AllowInsecure,
 	}
 
 	for i := range opts.localPorts {
@@ -241,12 +243,13 @@ func (opts *TunnelOptions) Run(ctx context.Context, args []string) error {
 		}
 
 		pr := Relay{
-			lAddr:    net.JoinHostPort("127.0.0.1", strconv.FormatUint(uint64(opts.localPorts[i]), 10)),
-			rAddr:    net.JoinHostPort(sgFQDN, strconv.FormatUint(uint64(opts.exposedProxyPorts[i]), 10)),
-			ctype:    opts.ctypes[i],
-			auth:     authStr,
-			name:     instID,
-			nameAddr: fmt.Sprintf("%s:%d", rawInstances[i], opts.instanceProxyPorts[i]),
+			lAddr:         net.JoinHostPort("127.0.0.1", strconv.FormatUint(uint64(opts.localPorts[i]), 10)),
+			rAddr:         net.JoinHostPort(sgFQDN, strconv.FormatUint(uint64(opts.exposedProxyPorts[i]), 10)),
+			ctype:         opts.ctypes[i],
+			auth:          authStr,
+			name:          instID,
+			nameAddr:      fmt.Sprintf("%s:%d", rawInstances[i], opts.instanceProxyPorts[i]),
+			allowInsecure: opts.AllowInsecure,
 		}
 
 		go func() {
